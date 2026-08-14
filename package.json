@@ -1,7 +1,7 @@
 {
-  "name": "@zeaz/zfbauto",
+  "name": "@zeaz/zeto",
   "version": "1.1.0",
-  "description": "ZeaZ FB Auto Post Bot \u2014 Full-featured Facebook page automation dashboard",
+  "description": "Zeto — AI content factory and Facebook publishing automation dashboard",
   "main": "src/server.js",
   "private": true,
   "scripts": {
