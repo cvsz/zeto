@@ -1,123 +1,144 @@
 # Zeto Execution Plan
 
-> Repository target: `cvsz/zeto`
+> Repository: `cvsz/zeto`
 >
-> Current repository during migration: `cvsz/zfbauto`
+> Product target: **Zeto ProMeta Master Professional — Enterprise-grade Production Release**
 >
-> Current application baseline: v1.1.0 Facebook Page automation dashboard.
+> Baseline: v1.1.0 Facebook Page automation dashboard evolving into a complete AI Content Factory.
+>
+> Visual reverse-engineering note: the Humanoid View requirements below are derived from the screenshot supplied on 2026-08-15. A full video file was not present in the conversation at the time of this revision; video-specific motion, transitions, gestures, menus, and hidden interactions must be reconciled when the video is supplied.
 
 ## 1. Mission
 
-Evolve the existing Facebook automation dashboard into **Zeto**, a production-grade AI Content Factory that executes the complete lifecycle:
+Zeto is a production-grade AI Content Factory and operator control plane executing the complete lifecycle:
 
 ```text
 IDEATE → GENERATE → WRITE → APPROVE → SCHEDULE → PUBLISH → MONITOR → LEARN
 ```
 
-The implementation follows the ProMaster/P-MASTER operating model:
+The operating model is ProMeta/P-MASTER:
 
 ```text
-ROLE → INPUTS → MODES → CONSTRAINTS → OUTPUT → SELF-CHECK
+ROLE → INPUTS → MODES → CONSTRAINTS → OUTPUT → SELF-CHECK → EVIDENCE → OPTIMIZE
 ```
 
-Every major AI module must support three lifecycle modes:
+Every major AI module supports:
 
 - `PRODUCTION` — create the requested artifact.
-- `OPS` — operate the feature continuously and safely.
-- `OPTIMIZE` — learn from metrics and improve future outputs.
+- `OPS` — operate the capability continuously and safely.
+- `OPTIMIZE` — learn from persisted metrics and improve future outputs.
+- `REVIEW` — inspect evidence, policy, quality, cost, and reliability before promotion.
 
-The existing Facebook functionality is the first production publishing adapter, not a disposable prototype.
+The existing Facebook implementation is the first production publishing adapter, not a disposable prototype.
 
----
+## 2. Definition of Complete
 
-## 2. Baseline
+The project is **not complete** because a feature exists in a mockup. Final completion requires all applicable items below:
 
-Current implemented capabilities:
+- Production implementation, not placeholders.
+- Authenticated and authorized API boundary.
+- Durable persistence and restart safety.
+- Typed/validated contracts.
+- Idempotent mutations and side effects.
+- Audit/provenance evidence.
+- Unit, integration, API-contract, workflow, provider-fake, security and end-to-end tests.
+- Observability: logs, metrics, traces and actionable alerts.
+- Failure, retry, timeout, cancellation and recovery semantics.
+- Security review and no known critical/high defects.
+- Operator documentation and rollback/runbook coverage.
+- CI green on protected `main`.
+- Staging proof for the complete factory workflow.
+
+No phase may be marked complete solely from documentation or UI appearance.
+
+## 3. Current Baseline
+
+Implemented baseline capabilities include:
 
 - Dashboard and KPI overview.
-- Rich-text/photo Facebook publishing.
+- Facebook rich-text/photo publishing.
 - Local post queue.
-- Cron-based scheduler.
+- Cron scheduler.
 - Facebook Page feed management.
-- Publish history/audit-style activity records.
+- Publish history.
 - Settings UI and server-side configuration.
-- Analytics visualization entry point.
-- AI Generator UI entry point.
+- Analytics and AI Generator UI entry points.
 - Express backend and static SPA frontend.
 - JSON-backed persistence.
+- Google Drive media integration.
 
-Current technical constraints:
+Current technical debt / gaps:
 
-- Persistence is local JSON instead of a transactional database.
-- No durable distributed job queue.
-- No formal approval state machine.
-- No unified `/v1` API boundary.
-- No model-provider abstraction/fallback router.
-- No full observability stack.
-- No production test suite.
-- No policy engine covering all generated assets.
-- Facebook is the only implemented publishing adapter.
+- Local JSON persistence instead of PostgreSQL.
+- No durable distributed queue.
+- No complete workflow/approval state machine.
+- Legacy `/api` dominates; `/v1` migration is incomplete.
+- No provider-neutral model router with production fallback evidence.
+- No complete observability stack.
+- Test coverage is newly bootstrapped and incomplete.
+- No global policy engine for generated assets.
+- Facebook is the only production publishing adapter.
+- Legacy product references remain in parts of the UI/storage namespace.
 
----
+## 4. Repository and Product Identity
 
-## 3. Naming and Repository Migration
-
-### Required repository migration
-
-Target repository identity:
+Canonical identity:
 
 ```text
-cvsz/zfbauto  →  cvsz/zeto
+cvsz/zeto
+@zeaz/zeto
+Product name: Zeto
 ```
+
+Rules:
+
+- `Zeto` is the platform/product.
+- `Facebook Adapter` is one integration inside Zeto.
+- New code must not introduce `zfbauto` as a namespace.
+- Legacy browser storage keys may be read temporarily for migration, but new writes use `zeto_*` keys.
+- Repository, CI, deployment, badges, webhooks, GitHub Apps and environments must reference `cvsz/zeto`.
 
 Migration checklist:
 
-- [ ] Rename GitHub repository to `zeto`.
-- [x] Rename package from `@zeaz/zfbauto` to `@zeaz/zeto`.
-- [x] Update README product identity to Zeto.
-- [x] Add this execution plan.
-- [ ] Replace remaining UI labels containing `zfbauto` or `FB Auto` when they refer to the product rather than the Facebook adapter.
-- [ ] Update clone URLs and documentation links after GitHub rename.
-- [ ] Update CI/CD repository references, deployment targets, badges, webhooks, GitHub App configuration, and environment integrations.
-- [ ] Preserve redirects from the old GitHub repository URL where GitHub provides them.
-- [ ] Verify branch protection and secrets after rename.
+- [x] Canonical GitHub repository is `cvsz/zeto`.
+- [x] Package is `@zeaz/zeto`.
+- [x] README product identity uses Zeto.
+- [x] Execution plan exists.
+- [x] Runtime health service identity uses `zeto` on the implementation branch.
+- [ ] Remove remaining stale product labels in UI/source/storage migration paths.
+- [ ] Verify branch protection, environments and secrets.
+- [ ] Verify deployment targets and external webhooks.
 
-Product naming rule:
-
-- **Zeto** = product/platform.
-- **Facebook Adapter** = one publishing integration inside Zeto.
-- Do not use `zfbauto` as a new code namespace after migration.
-
----
-
-## 4. Target Architecture
+## 5. Target Architecture
 
 ```mermaid
 flowchart LR
     UI[Zeto Dashboard] --> API[/v1 API Gateway]
-    API --> AUTH[Auth & Policy]
-    API --> IDEAS[Strategy / M01]
-    API --> GEN[Generation / M02-M05]
-    API --> QA[QA & Approval / M10]
-    API --> PUB[Calendar & Publish / M06]
-    API --> MON[Monitoring / M07]
-    API --> BI[Analytics / M08]
-    API --> ORCH[Orchestrator / M09]
+    HUM[Humanoid Operator View] --> API
+    API --> AUTH[Auth / RBAC / Policy]
+    API --> IDEAS[M01 Strategy]
+    API --> GEN[M02-M05 Generation]
+    API --> QA[M10 QA & Approval]
+    API --> PUB[M06 Calendar & Publishing]
+    API --> MON[M07 Monitoring]
+    API --> BI[M08 Analytics]
+    API --> ORCH[M09 Orchestrator]
 
     ORCH --> QUEUE[Durable Job Queue]
     QUEUE --> WORKERS[Worker Pool]
+    ORCH --> EVENTS[Event Bus / Outbox]
 
-    GEN --> MODELS[AI Model Router]
-    MODELS --> IMG[Image Providers]
-    MODELS --> VIDEO[Video Providers]
-    MODELS --> AUDIO[Audio Providers]
-    MODELS --> LLM[LLM Providers]
+    GEN --> ROUTER[AI Model Router]
+    ROUTER --> IMG[Image Providers]
+    ROUTER --> VIDEO[Video Providers]
+    ROUTER --> AUDIO[Audio Providers]
+    ROUTER --> LLM[LLM Providers]
 
-    PUB --> ADAPTERS[Publishing Adapters]
+    PUB --> ADAPTERS[PublishingProvider]
     ADAPTERS --> FB[Facebook]
     ADAPTERS --> IG[Instagram]
-    ADAPTERS --> TT[TikTok]
     ADAPTERS --> YT[YouTube]
+    ADAPTERS --> TT[TikTok]
     ADAPTERS --> X[X]
     ADAPTERS --> LI[LinkedIn]
 
@@ -125,22 +146,23 @@ flowchart LR
     WORKERS --> DB
     WORKERS --> OBJ[(Object Storage)]
     API --> OBS[Logs / Metrics / Traces / Audit]
+    HUM --> OBS
 ```
 
 Architecture principles:
 
-1. Provider secrets remain server-side.
-2. All mutating operations are authenticated, authorized, auditable, and idempotent.
-3. Publishing is adapter-based; platform-specific logic never leaks into core workflow state.
-4. AI generation is provider-agnostic with explicit fallback chains and cost limits.
-5. Human approval remains available even when `AUTO_PILOT=true`.
-6. Every async job has retry, timeout, cancellation, ownership, and failure-state semantics.
-7. Every generated artifact records provenance.
-8. APIs are versioned under `/v1`.
+1. Provider secrets stay server-side.
+2. Every mutation is authenticated, authorized, validated, auditable and idempotent.
+3. Platform-specific publishing code remains behind adapters.
+4. AI generation remains provider-neutral with bounded fallback and cost policy.
+5. Human approval remains possible even with `AUTO_PILOT=true`.
+6. Every async job has ownership, retry, timeout, cancellation and failure semantics.
+7. Every generated artifact records provenance/version/cost/model route.
+8. Public application APIs converge under `/v1`.
+9. UI telemetry must be derived from persisted/runtime state; never fabricate KPI values.
+10. Autonomous remediation may prepare changes, but release promotion remains evidence-gated.
 
----
-
-## 5. Core Domain Model
+## 6. Core Domain Model
 
 Minimum production entities:
 
@@ -169,11 +191,14 @@ model_routes
 cost_events
 alerts
 audit_events
+operator_sessions
+system_snapshots
+agent_states
+maintenance_runs
+release_evidence
 ```
 
-Required canonical integration objects:
-
-### Asset
+Canonical `Asset` contract:
 
 ```json
 {
@@ -191,7 +216,7 @@ Required canonical integration objects:
 }
 ```
 
-### Post
+Canonical `Post` contract:
 
 ```json
 {
@@ -207,115 +232,95 @@ Required canonical integration objects:
 }
 ```
 
-### Digest
+Canonical `OperatorSnapshot` contract:
 
 ```json
 {
-  "date": "YYYY-MM-DD",
-  "volume": 0,
-  "vol_delta": 0,
-  "sentiment": 0,
-  "rising": [],
-  "replies": [],
-  "opportunities": [],
+  "generated_at": "ISO-8601",
+  "mode": "OPERATOR|AUTO-PILOT",
+  "system_state": "ONLINE|DEGRADED|PAUSED",
+  "neural_load": 0,
+  "confidence": 0,
+  "focus": "APPROVAL|PUBLISHING|MONITORING|INCIDENT",
+  "queue_depth": 0,
+  "approval_backlog": 0,
+  "failed_jobs": 0,
+  "modules": [],
   "alerts": []
 }
 ```
 
----
+## 7. Module Delivery Matrix
 
-## 6. Module Delivery Matrix
-
-| Module | Capability | Primary production output | Ops responsibility | Optimization loop |
+| Module | Capability | Production output | OPS responsibility | Optimization loop |
 |---|---|---|---|---|
-| M01 | Strategy & Ideation | Scored ideas, pillars, hooks | Daily idea standup | Recalibrate idea scoring |
-| M02 | AI Image | Image prompts + variants | Batch generation | Style-token performance |
-| M03 | AI Video | Reel/avatar/B-roll specs | Render queue | Retention-curve tuning |
-| M04 | AI Music & Audio | Jingles, loops, stings, sonic logo | Audio library ops | Track/watch-time correlation |
-| M05 | Captions/Hooks/Hashtags | Platform-ready copy | Daily caption packs | Hook/CTA analysis |
+| M01 | Strategy & Ideation | Scored ideas, pillars, hooks | Daily idea standup | Recalibrate scoring |
+| M02 | AI Image | Prompts + variants | Batch generation | Style performance |
+| M03 | AI Video | Reel/avatar/B-roll jobs | Render queue | Retention tuning |
+| M04 | AI Music & Audio | Licensed audio assets | Audio library ops | Watch-time correlation |
+| M05 | Captions/Hooks/Hashtags | Platform copy | Caption packs | Hook/CTA analysis |
 | M06 | Calendar & Auto-Post | Content calendar | Idempotent publisher | Best-time recompute |
 | M07 | Monitoring & Sentiment | Alerts/digests/replies | Social listening | Threshold tuning |
-| M08 | Analytics Dashboard | KPI/dashboard views | Daily factory report | Weekly executive review |
-| M09 | Automation & API | End-to-end workflows | Pipeline health | Cost/latency optimization |
-| M10 | QA/Brand Safety | 12-point score + approval | Approval routing | Calibration of policy weights |
+| M08 | Analytics | Reproducible KPIs | Factory report | Executive review |
+| M09 | Automation & API | Durable workflows | Pipeline health | Cost/latency optimization |
+| M10 | QA / Brand Safety | Score + approval | Approval routing | Policy calibration |
+| M11 | Humanoid Operator | Live system twin/control room | Operator awareness | Attention prioritization |
 
----
-
-## 7. Delivery Phases
+# 8. Delivery Phases
 
 ## Phase 0 — Rebrand and Engineering Baseline
 
-### Goals
+Deliverables:
 
-Make Zeto the canonical product identity and establish a trustworthy engineering baseline before feature expansion.
+- Canonical Zeto branding.
+- `AGENTS.md`, `ARCHITECTURE.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, ADR directory.
+- Complete `.env.example` contract.
+- ESLint/format/build validation.
+- Real test runner and test structure.
+- GitHub Actions for lint, tests, dependency audit, secret scanning and container build.
+- Runtime policy pinned to supported Node release.
+- `/health` and `/ready` endpoints.
 
-### Deliverables
+Exit criteria:
 
-- Repository rename to `cvsz/zeto`.
-- Replace stale product-name references.
-- Keep Facebook-specific names only inside Facebook adapter code.
-- Add `AGENTS.md`, `ARCHITECTURE.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and ADR directory.
-- Add `.env.example` documentation for every supported environment variable.
-- Add ESLint/prettier/format checks.
-- Replace placeholder test script with a real test runner.
-- Add unit/integration/API test structure.
-- Add GitHub Actions for lint, tests, dependency audit, secret scanning, and container build.
-- Pin production runtime and dependency policy.
-
-### Exit criteria
-
-- Clean install from a fresh checkout.
-- Lint passes.
-- Tests pass.
-- Container starts and `/health` reports healthy.
+- Fresh checkout installs cleanly.
+- Lint/tests/build/container checks pass.
 - No committed secrets.
-- README and runtime branding use Zeto consistently.
+- Runtime and UI consistently use Zeto identity.
 
----
+## Phase 1 — Persistence, API Boundary and Workflow Foundation
 
-## Phase 1 — Persistence, API Boundary, and Workflow Foundation
-
-### Goals
-
-Replace local-only storage with durable state and define stable application boundaries.
-
-### Deliverables
+Deliverables:
 
 - PostgreSQL adapter and migrations.
 - Repository/data-access layer separated from HTTP handlers.
 - `/v1` API namespace.
 - Request validation and typed schemas.
-- Durable job abstraction.
+- Durable queue abstraction.
 - Workflow and approval state machines.
 - Audit-event writer.
-- Idempotency key support for mutating endpoints.
+- Idempotency-key support for mutations.
 - Correlation/request IDs.
-- Object-storage abstraction for generated media.
+- Object-storage abstraction.
+- Outbox/event pattern for reliable side effects.
 
-### Minimum schema
+Minimum persistence rules:
 
-Implement the entities listed in Section 5 with foreign keys, timestamps, unique constraints, indexes, and retention strategy.
+- Foreign keys, timestamps, unique constraints and indexes.
+- Explicit retention/archival strategy.
+- Forward-safe migrations.
+- Backup and restore proof.
 
-### Exit criteria
+Exit criteria:
 
-- No business logic depends directly on JSON files.
+- Business logic no longer depends directly on JSON files.
 - Queue/schedule/publication state survives restarts.
-- Duplicate publish commands do not create duplicate posts.
-- Every mutation produces an audit event.
+- Duplicate publish commands cannot create duplicate publications.
+- Every mutation emits auditable evidence.
 
----
+## Phase 2 — ProMeta Prompt Compiler + M01-M05 Generation Plane
 
-## Phase 2 — Prompt Compiler + M01-M05 Generation Plane
-
-### Goals
-
-Implement the content creation side of the factory.
-
-### Deliverables
-
-#### ProMaster Compiler
-
-Inputs:
+Compiler inputs:
 
 ```text
 brand
@@ -335,90 +340,73 @@ audio_model
 
 Compiler requirements:
 
-- Resolve all placeholders before execution.
-- Preserve P-MASTER structure.
-- Produce machine-readable JSON outputs where required.
-- Preserve approval gates unless explicitly configured otherwise.
-- Append brand-kit policy to every asset generation request.
+- Resolve placeholders before execution.
+- Preserve P-MASTER/ProMeta structure.
+- Produce typed machine-readable output.
+- Preserve approval gates unless explicitly policy-approved.
+- Append brand-kit policy to generation requests.
+- Record prompt hash, compiler version, model route and cost estimate.
 
-#### M01 Strategy & Ideation
+M01 Strategy:
 
-- 90-day strategy generation.
+- 90-day strategy.
 - Content pillars.
 - Persona/pain mapping.
 - Idea scoring.
 - Hook bank.
 - Daily/weekly optimization routines.
 
-#### M02 AI Image
+M02 Image:
 
-- Prompt/negative-prompt generator.
+- Prompt/negative prompt.
 - Aspect-ratio policy.
 - Variant seeds.
-- Prompt hash and palette provenance.
+- Prompt hash/palette provenance.
 - Brand-delta validation.
 
-#### M03 AI Video
+M03 Video:
 
-- Reel, avatar, and B-roll templates.
+- Reel/avatar/B-roll templates.
 - Timecoded shot lists.
-- Caption and CTA requirements.
+- Captions/CTA requirements.
 - Provider-independent render jobs.
 
-#### M04 AI Audio
+M04 Audio:
 
-- Generated licensed audio only.
-- LUFS metadata and validation.
-- Mood/BPM/use-case tagging.
-- Licensing provenance.
+- Generated/licensed audio only.
+- LUFS validation.
+- Mood/BPM/use-case tags.
+- License provenance.
 
-#### M05 Captions
+M05 Captions:
 
 - Per-platform rewriting.
 - Hook/CTA/hashtag generation.
-- Alt text and SEO description.
-- Character-limit validation.
+- Alt text/SEO description.
+- Character and policy limits.
 
-### Model Router
-
-Implement task-based routing:
+Model router:
 
 ```text
 Task → Preferred Model → Fallback 1 → Fallback 2 → Failure Queue
 ```
 
-Each route records:
+Each attempt records provider, model, latency, usage, estimated cost, retry count, quality score and fallback reason.
 
-- model/provider,
-- latency,
-- input/output usage,
-- estimated cost,
-- retry count,
-- quality score,
-- fallback reason.
+Exit criteria:
 
-### Exit criteria
+- One idea generates a complete draft asset pack.
+- Artifacts have provenance/versioning.
+- Cost caps are enforced before generation.
+- Provider failure uses bounded fallback without losing workflow state.
 
-- One idea can generate a complete draft asset pack.
-- All artifacts have provenance and versioning.
-- Cost caps are enforceable before generation.
-- Provider failure triggers bounded fallback rather than losing the workflow.
+## Phase 3 — M10 QA, Brand Safety and Human Approval
 
----
-
-## Phase 3 — M10 QA, Brand Safety, and Human Approval
-
-### Goals
-
-No generated artifact reaches autonomous publishing without enforceable policy evaluation.
-
-### 12-point QA scorer
-
-Score these dimensions:
+12-point scorer:
 
 1. Brand palette.
 2. Font policy.
-3. Logo rule.
+3. Logo policy.
 4. Claim substantiation.
 5. Platform policy.
 6. Copyright/music clearance.
@@ -429,191 +417,217 @@ Score these dimensions:
 11. Sentiment/reputation risk.
 12. CTA presence.
 
-Routing policy:
+Routing:
 
 ```text
-score < 70    → BLOCK
-score 70-89   → HUMAN REVIEW
-score >= 90   → AUTO-PASS only when AUTO_PILOT=true
+score < 70  → BLOCK
+70-89       → HUMAN REVIEW
+>= 90       → AUTO-PASS only if AUTO_PILOT=true and all hard policies pass
 ```
 
-Humans always retain override authority.
+Exit criteria:
 
-### Exit criteria
-
-- Every asset has a visible score breakdown.
-- Every block includes reasons and remediation hints.
+- Visible score breakdown and remediation hints.
 - Approval decisions are immutable audit records.
-- Publishing checks approval state transactionally.
+- Publishing checks approval transactionally.
+- Approval bypass tests fail closed.
 
----
+## Phase 4 — M06 Calendar, Scheduling and Production Publishing
 
-## Phase 4 — M06 Calendar, Scheduling, and Production Publishing
+Deliverables:
 
-### Goals
-
-Turn the current scheduler into a durable publishing subsystem.
-
-### Deliverables
-
-- Calendar service with timezone-safe slots.
+- Timezone-safe calendar slots.
 - Publication state machine.
 - Idempotent publishing.
-- Retry policy with exponential backoff and jitter.
+- Exponential backoff + jitter.
 - Dead-letter/failure queue.
-- Manual retry/cancel operations.
-- Publication IDs and permalinks persisted.
-- Evergreen content recycling rules.
-- Best-time recommendations from historical metrics.
+- Manual retry/cancel.
+- Persisted publication IDs/permalinks/provider metadata.
+- Evergreen recycling rules.
+- Best-time recommendations based on historical metrics.
 
-### Facebook adapter hardening
+Facebook adapter hardening:
 
-- Encapsulate Meta Graph API logic behind `PublishingProvider` interface.
-- Validate permissions/token state.
-- Normalize API errors.
-- Respect rate limits.
-- Add token-expiry diagnostics.
-- Add publish/delete/read tests with provider fakes.
+- `PublishingProvider` interface.
+- Permission/token validation.
+- Normalized provider errors.
+- Rate-limit awareness.
+- Token-expiry diagnostics.
+- Provider fake tests for publish/delete/read/status.
 
-### Exit criteria
+Exit criteria:
 
-- Restarting Zeto cannot duplicate a scheduled publication.
-- Failed jobs are inspectable and retryable.
-- All publication attempts have audit and provider-response metadata.
+- Restart cannot duplicate publication.
+- Failed jobs are inspectable/retryable.
+- Every attempt has audit/provider evidence.
 
----
+## Phase 5 — M07 Monitoring, Sentiment and Competitor Intelligence
 
-## Phase 5 — M07 Monitoring, Sentiment, Competitor Intelligence
-
-### Goals
-
-Close the operational feedback loop.
-
-### Deliverables
+Deliverables:
 
 - Mention ingestion adapters.
-- Comment classification: `question|complaint|praise|spam|lead`.
-- Sentiment score normalized to 0-100.
-- Configurable alert rules.
+- Classification: `question|complaint|praise|spam|lead`.
+- Normalized sentiment 0-100.
+- Alert rules and deduplication.
 - Reply-draft generation.
-- Escalation workflow and SLA timers.
+- Escalation workflow + SLA timers.
 - Lead handoff interface.
 - Competitor metrics model.
 
-Default alert classes:
+Default alerts:
 
-- volume spike,
-- sentiment deterioration,
-- viral negative content,
-- competitor pricing mention,
-- creator/influencer mention,
-- overdue critical reply.
+- Volume spike.
+- Sentiment deterioration.
+- Viral negative content.
+- Competitor pricing mention.
+- Creator/influencer mention.
+- Overdue critical reply.
 
-### Exit criteria
+Exit criteria:
 
-- Alerts are deduplicated.
-- Every complaint has a draft response or escalation record.
-- Alert precision/recall can be measured for future threshold tuning.
-
----
+- Alerts deduplicate deterministically.
+- Every complaint has draft response or escalation.
+- Precision/recall can be measured.
 
 ## Phase 6 — M08 Analytics and Control Room
 
-### Goals
-
-Create a measurable operating system for the factory.
-
-### Required dashboard areas
+Dashboard areas:
 
 - Followers/reach/engagement deltas.
 - Best publishing times.
 - Idea → Generating → Review → Scheduled → Live kanban.
 - Mention feed with sentiment.
 - 30-day trends.
-- Platform performance cards.
-- Production queue status.
-- Alerts.
-- Approvals.
+- Platform performance.
+- Production queue.
+- Alerts/approvals.
 - Cost per asset.
 - Model latency/failure rate.
 
-Each metric/chart must define:
+Every chart defines query source, period, prior-period comparison, empty state and mobile behavior.
 
-- SQL/query source,
-- period,
-- prior-period comparison,
-- empty-state behavior,
-- mobile behavior.
+Exit criteria:
 
-### Exit criteria
+- KPIs are reproducible from persisted data.
+- No fabricated values.
+- Daily and weekly reports use the same source metrics.
 
-- Every displayed KPI is reproducible from persisted data.
-- Dashboard never fabricates unavailable data.
-- Daily Factory Report and weekly executive summary can be generated from the same source metrics.
+## Phase 6A / M11 — Humanoid Neural Operator View
 
----
+### Visual source and intent
+
+The supplied screenshot shows a dark operator workstation with a large display presenting a side-profile humanoid head rendered as thousands of cyan/gold particles, with a bright energy/core point and dense control surfaces around it. Zeto will implement this as a **live system twin**, not a cosmetic animation.
+
+### Current implementation slice
+
+- [x] Standalone `/humanoid` operator surface.
+- [x] Canvas point-cloud humanoid visualization without external 3D dependency.
+- [x] Live backend-derived queue/approval/schedule/history telemetry.
+- [x] Authenticated `/v1/humanoid/state` endpoint.
+- [x] Module/agent matrix for M01-M10/M11 operational state.
+- [x] Runtime Node/uptime/scheduler visibility.
+- [x] Unit test for operator-state derivation.
+
+### Full-stack target
+
+Frontend:
+
+- WebGL/Canvas renderer supporting desktop/tablet/mobile.
+- Side-profile point cloud, neural core, orbital/voice-wave effects and scan telemetry.
+- 30/60 FPS adaptive rendering with reduced-motion fallback.
+- Keyboard navigation and screen-reader state summary.
+- Agent/workflow topology view.
+- Drill-down from head regions/nodes into workflow, provider, queue, approval and incident panels.
+- Operator command palette.
+- Incident mode that visually distinguishes degraded modules without relying on color alone.
+- Historical playback of operator snapshots.
+
+Backend:
+
+- `/v1/humanoid/state` — current system twin snapshot.
+- `/v1/humanoid/timeline` — historical snapshots.
+- `/v1/humanoid/modules/:id` — module detail and health evidence.
+- `/v1/humanoid/commands` — admin-only allowlisted operator commands.
+- Server-Sent Events or WebSocket transport for live events after durable event foundation exists.
+- State sourced from PostgreSQL/workflows/metrics/alerts/providers, never random dashboard data.
+- Snapshot provenance, sequence numbers and correlation IDs.
+
+Operator commands must be allowlisted and RBAC-protected, including:
+
+- Pause/resume AUTO-PILOT.
+- Pause/resume scheduler.
+- Retry/cancel a selected failed job.
+- Open approval item.
+- Trigger health diagnostics.
+- Activate emergency publishing kill switch.
+
+No arbitrary shell execution is exposed through the UI.
+
+Humanoid semantics:
+
+- `confidence` = derived operational confidence, with documented formula/version.
+- `neural_load` = normalized queue/worker/provider pressure.
+- `focus` = highest-priority current operator concern.
+- `alert_level` = deterministic rules from incidents/approvals/failures/SLOs.
+- Head/particle animation reacts to real state but does not redefine the state.
+
+Video reconciliation pass, once the source video is uploaded:
+
+- Extract key frames and interaction timeline.
+- Inventory every visible panel/control/transition.
+- Reproduce interaction hierarchy without copying protected branding/assets.
+- Map each interaction to a real Zeto API/domain capability.
+- Add missing animation states, gestures and transitions.
+- Add visual-regression tests for representative viewport states.
+
+Exit criteria:
+
+- Operator view remains useful with animation disabled.
+- Every displayed operational metric has a source and timestamp.
+- Stale/disconnected states are visibly indicated.
+- Viewer cannot invoke mutations.
+- Admin commands are audited/idempotent where applicable.
+- 1-hour soak test has no unbounded memory growth.
+- Rendering meets performance budget on supported targets.
 
 ## Phase 7 — M09 Orchestration and AUTO-PILOT
 
-### Goals
-
-Operate the factory as a reliable event-driven workflow.
-
-### Canonical chain
+Canonical chain:
 
 ```text
 M01[OPS]
   → M02-M05[PRODUCTION]
   → M10[QA]
   → approval gate
-  → M06[publish]
-  → M07[monitor]
-  → M08[report]
+  → M06[PUBLISH]
+  → M07[MONITOR]
+  → M08[REPORT]
   → M01-M05[OPTIMIZE]
 ```
 
-### Orchestration requirements
+Requirements:
 
 - Durable workflow run IDs.
-- Step-level ownership and status.
-- Retry and compensation policies.
-- Cancellation.
-- Timeout handling.
+- Step ownership/status.
+- Retry/compensation.
+- Cancellation/timeouts.
 - Idempotent side effects.
-- Artifact passing through typed JSON contracts.
+- Typed artifact passing.
 - Stuck-job detection.
 - Per-run cost accounting.
-- Human-intervention checkpoints.
+- Human intervention checkpoints.
 
-### AUTO-PILOT guardrails
+AUTO-PILOT always obeys QA threshold, platform permission, budget, frequency cap, claims/copyright policy, emergency kill switch and audit logging.
 
-`AUTO_PILOT=true` never means unrestricted execution.
+Exit criteria:
 
-Autonomous actions must still obey:
-
-- QA score threshold,
-- approved platform permissions,
-- budget cap,
-- posting frequency cap,
-- claim/copyright rules,
-- emergency kill switch,
-- audit logging.
-
-### Exit criteria
-
-- A workflow can run end-to-end without manual data copying.
-- Any failed step is resumable without replaying successful side effects.
-- The operator can stop all autonomous publishing immediately.
-
----
+- End-to-end workflow requires no manual data copying.
+- Failed steps resume without replaying completed side effects.
+- Operator can stop autonomous publishing immediately.
 
 ## Phase 8 — Multi-Platform Publishing
 
-### Goals
-
-Generalize Zeto beyond Facebook without compromising the Facebook production path.
-
-Suggested adapter sequence:
+Adapter sequence:
 
 1. Instagram.
 2. YouTube.
@@ -621,243 +635,186 @@ Suggested adapter sequence:
 4. X.
 5. LinkedIn.
 
-Each adapter must implement a shared contract for:
+Shared adapter contract:
 
-- auth validation,
-- capability discovery,
-- publish,
-- media upload,
-- delete where supported,
-- publication status,
-- metrics ingestion,
-- normalized errors,
-- rate-limit metadata.
+- Auth validation.
+- Capability discovery.
+- Publish/media upload.
+- Delete where supported.
+- Publication status.
+- Metrics ingestion.
+- Normalized errors.
+- Rate-limit metadata.
 
-### Exit criteria
+Exit criteria:
 
-- Core workflow code contains no platform-specific branching beyond adapter capability checks.
-- Platform-specific validation occurs before queue acceptance.
+- Core workflows contain no platform-specific branching beyond capability checks.
+- Platform validation occurs before queue acceptance.
 
----
+## Phase 9 — Enterprise Production Hardening
 
-## Phase 9 — Production Hardening and Final Release
+Reliability:
 
-### Reliability
-
-- Health/readiness endpoints.
+- Health/readiness/startup endpoints.
 - Graceful shutdown.
 - Worker heartbeats.
-- DB connection-pool limits.
+- DB pool limits.
 - Request/job timeouts.
-- Exponential retry with bounded attempts.
-- Dead-letter queues.
-- Disaster-recovery documentation.
+- Bounded exponential retry.
+- DLQ.
+- Disaster recovery.
 - Backup/restore verification.
+- SLO/SLA definitions and error budgets.
 
-### Security
+Security:
 
 - Secret manager integration.
 - Least-privilege provider credentials.
-- Encryption at rest/in transit.
-- CSRF/session policy as applicable.
-- Input validation and output encoding.
-- Upload MIME/size validation.
-- SSRF protection for remote media URLs.
+- Encryption in transit/at rest.
+- Session/CSRF policy.
+- Input validation/output encoding.
+- Upload MIME/size/content validation.
+- SSRF protection.
 - Rate limiting.
-- Dependency and container scanning.
-- Security event audit trail.
+- Dependency/container/code scanning.
+- Security audit trail.
+- Threat model and abuse-case tests.
 
-### Observability
+Observability:
 
 - Structured JSON logs.
-- Metrics for HTTP, jobs, providers, publishing, generation cost, and approvals.
+- HTTP/job/provider/publishing/cost/approval metrics.
 - Distributed traces for workflow runs.
-- Alerting on availability, error rate, stuck jobs, queue depth, and provider degradation.
+- Alerts on availability, error rate, stuck jobs, queue depth, DB saturation and provider degradation.
 
-### Release gates
+Performance:
+
+- Load baseline for API and workers.
+- Queue throughput benchmark.
+- Publish/generation latency objectives.
+- Browser performance budget.
+- Humanoid view memory/FPS budget.
+
+## 9. Continuous 30-Minute Engineering Verification Loop
+
+Zeto uses a repository-owned GitHub Actions schedule every 30 minutes for **verification and maintenance evidence**.
+
+The loop must:
+
+1. Checkout the latest target branch.
+2. Install dependencies reproducibly.
+3. Run lint.
+4. Run full unit/integration tests available in the repository.
+5. Run build/syntax validation.
+6. Run high-severity dependency audit.
+7. Build the container.
+8. Inspect outdated dependencies without automatically accepting breaking upgrades.
+9. Publish an evidence artifact/report for the run.
+10. Fail loudly when any gate regresses.
+
+Important engineering rule:
+
+- The 30-minute workflow may verify, inspect, report and prepare safe maintenance metadata.
+- It must **not** blindly rewrite application code, auto-merge arbitrary AI changes, rotate secrets, modify production credentials or promote releases without evidence gates.
+- Automated implementation agents, when added, work on isolated branches/PRs and must pass the same suite before merge.
+
+This design preserves the user's requested continuous update/upgrade/review cadence without converting production into an uncontrolled self-modifying system.
+
+## 10. Upgrade / Update / Implementation Loop
+
+For every vertical slice:
+
+```text
+AUDIT
+→ PLAN
+→ IMPLEMENT
+→ SELF-REVIEW
+→ LINT
+→ UNIT TEST
+→ INTEGRATION TEST
+→ API CONTRACT TEST
+→ SECURITY TEST
+→ CONTAINER TEST
+→ PERFORMANCE CHECK (when relevant)
+→ REVIEW DIFF
+→ PR
+→ CI
+→ REPAIR FAILURES
+→ MERGE WHEN GREEN
+→ NEXT SLICE
+```
+
+Upgrade policy:
+
+- Patch/minor dependencies may be proposed automatically after compatibility checks.
+- Major upgrades require migration review.
+- Never bypass failing tests to obtain a green build.
+- Never suppress security findings without documented risk acceptance.
+- Every release change has rollback notes.
+
+## 11. Full Test Suite Target
+
+Mandatory categories by final release:
 
 - Unit tests.
-- Integration tests.
-- API contract tests.
-- Workflow state-machine tests.
-- Provider-fake tests.
-- End-to-end smoke tests.
+- Repository/database tests.
 - Migration tests.
-- Security checks.
-- Performance/load baseline.
+- API integration tests.
+- API schema/contract tests.
+- Auth/RBAC tests.
+- Idempotency tests.
+- Workflow state-machine tests.
+- Approval bypass/negative tests.
+- Provider fake/timeout/rate-limit tests.
+- Publishing duplicate prevention tests.
+- Object-storage tests.
+- Event/outbox tests.
+- Security tests including SSRF/upload/rate-limit/secret leakage.
+- Browser/UI smoke tests.
+- Humanoid view state/render smoke tests.
+- End-to-end factory workflow tests.
+- Backup/restore test.
 - Rollback test.
+- Load/performance baseline.
+- Soak tests for workers and operator UI.
 
-### Final release exit criteria
+## 12. Release Evidence Matrix
+
+A release candidate must attach evidence for:
+
+| Gate | Required evidence |
+|---|---|
+| Correctness | CI unit/integration/E2E results |
+| Database | Migration + backup/restore proof |
+| Publishing safety | Idempotency/duplicate tests |
+| Approval safety | Bypass-negative tests |
+| Provider safety | Secret leakage + fallback tests |
+| Security | Code/dependency/container scans |
+| Reliability | Retry/DLQ/restart/soak evidence |
+| Performance | API/worker/browser baseline |
+| Observability | Logs/metrics/traces visible in staging |
+| Operations | Runbook/incident/rollback docs |
+| UX | Responsive/accessibility/visual regression evidence |
+
+## 13. Final Release Exit Criteria
+
+`ProMeta Master Professional Enterprise Final Release` may be declared complete only when:
 
 - Zero known critical/high security defects.
-- CI green on protected main branch.
-- Database migrations are forward-safe and rollback strategy is documented.
+- Protected `main` is green.
+- PostgreSQL is the production source of truth.
+- M01-M11 applicable capabilities are implemented and tested.
+- Database migrations are forward-safe with documented rollback strategy.
 - Publishing duplication tests pass.
 - Approval bypass tests pass.
 - Provider-secret leakage tests pass.
 - Full end-to-end factory workflow passes in staging.
-- Operational runbook and incident procedures exist.
+- AUTO-PILOT kill switch is proven.
+- Humanoid Operator View reflects real system state and degrades safely when disconnected.
+- Multi-platform adapters meet the shared contract for enabled release platforms.
+- Observability/SLO alerts are operational.
+- Backup restore and incident exercises have passed.
+- Release artifacts are reproducible and signed/traceable as configured.
+- Operational runbook, incident procedures and release rollback instructions exist.
 
----
-
-## 8. API Design
-
-Target all new APIs under `/v1`.
-
-Suggested resource groups:
-
-```text
-/v1/brands
-/v1/ideas
-/v1/assets
-/v1/captions
-/v1/posts
-/v1/schedules
-/v1/publications
-/v1/metrics
-/v1/mentions
-/v1/competitors
-/v1/workflows
-/v1/approvals
-/v1/providers
-/v1/model-routes
-/v1/alerts
-/v1/audit-events
-```
-
-API requirements:
-
-- JSON schema validation.
-- Stable error envelope.
-- Pagination.
-- Idempotency keys for side-effecting operations.
-- Request IDs.
-- Explicit authorization checks.
-- OpenAPI generation.
-- No provider secret values in responses.
-
----
-
-## 9. Background Job Contract
-
-Every job must include:
-
-```json
-{
-  "id": "job_id",
-  "workflow_run_id": "run_id",
-  "type": "generate|qa|publish|monitor|report",
-  "attempt": 1,
-  "max_attempts": 3,
-  "timeout_ms": 120000,
-  "idempotency_key": "key",
-  "owner": "module_or_service",
-  "payload": {},
-  "created_at": "ISO-8601"
-}
-```
-
-Job states:
-
-```text
-queued → running → succeeded
-               ↘ retry_wait → running
-               ↘ failed
-               ↘ cancelled
-```
-
----
-
-## 10. Testing Strategy
-
-### Unit
-
-- Scoring logic.
-- Schedule calculations.
-- Retry policy.
-- Provider normalization.
-- P-MASTER compiler validation.
-- Cost-cap decisions.
-
-### Integration
-
-- PostgreSQL repositories.
-- Queue and worker behavior.
-- Approval transactions.
-- Object storage.
-- Adapter fakes.
-
-### Contract
-
-- `/v1` request/response schemas.
-- Publishing provider interface.
-- Model provider interface.
-- Webhook signatures.
-
-### End-to-end
-
-Critical scenarios:
-
-1. Idea → approved asset → scheduled Facebook publication.
-2. Rejected QA artifact never publishes.
-3. Publish retry succeeds without duplicate publication.
-4. Provider failure uses fallback model.
-5. Budget cap blocks generation.
-6. AUTO-PILOT respects approval/QA policy.
-7. Restart resumes queued workflows safely.
-8. Monitoring alert creates escalation.
-
----
-
-## 11. Delivery Rules
-
-For each vertical slice:
-
-1. Add/update design documentation.
-2. Add tests first or in the same change.
-3. Implement domain logic.
-4. Implement API/UI integration.
-5. Add metrics/logging/audit hooks.
-6. Run lint/tests/security checks.
-7. Update changelog.
-8. Merge only when the slice is independently deployable.
-
-Prefer small production-complete vertical slices over large unfinished framework commits.
-
----
-
-## 12. Priority Order
-
-```text
-P0  Repository rename + baseline CI/tests
-P0  PostgreSQL + durable workflow state
-P0  Approval/QA safety boundary
-P0  Idempotent Facebook publishing
-P1  Prompt compiler + M01/M02/M05
-P1  Model routing/fallback/cost accounting
-P1  M06 calendar and publication operations
-P1  M08 operational analytics
-P2  M03 video + M04 audio
-P2  M07 listening/sentiment
-P2  M09 full AUTO-PILOT orchestration
-P3  Additional social-platform adapters
-P3  Advanced optimization loops
-```
-
----
-
-## 13. Definition of Done
-
-A Zeto capability is complete only when:
-
-- code is implemented,
-- input/output contracts are validated,
-- failures are handled,
-- security boundaries are enforced,
-- tests cover success and failure paths,
-- logs/metrics/audit events exist,
-- documentation is updated,
-- upgrade/migration impact is known,
-- the capability is deployable without hidden manual steps.
-
-The final product is not considered complete merely because UI screens exist; each module must have a real backend path, durable state, policy enforcement, tests, and observable production behavior.
+Until all applicable evidence is present, status remains **in progress**, even if feature development is functionally broad.
