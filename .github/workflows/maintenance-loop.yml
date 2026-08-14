@@ -24,10 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Full repository checks
         run: npm run check
@@ -61,9 +60,10 @@ jobs:
             echo "- Commit: $GITHUB_SHA"
             echo "- Run: $GITHUB_RUN_ID"
             echo "- UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-            echo '- Node: `node --version`'
-            echo '- npm: `npm --version`'
+            echo "- Node: $(node --version)"
+            echo "- npm: $(npm --version)"
             echo '- Checks: lint + tests + build + dependency audit + container build'
+            echo '- Dependency install mode: temporary npm install until package-lock baseline is committed'
             echo
             echo '## Dependency update candidates'
             echo '```json'
