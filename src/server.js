@@ -4,6 +4,7 @@ const path = require('path');
 const multer = require('multer');
 const os = require('os');
 const db = require('./db');
+const { buildHumanoidState } = require('./humanoidView');
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ const requireRole = (allowedRoles) => (req, res, next) => {
 };
 
 app.use('/api', authMiddleware);
+app.use('/v1', authMiddleware);
 
 const fb = require('./fbController');
 const scheduler = require('./scheduler');
@@ -65,6 +67,7 @@ const runtimeStatus = () => ({
 
 app.get('/health', (req, res) => res.status(200).json(runtimeStatus()));
 app.get('/ready', (req, res) => res.status(200).json({ ...runtimeStatus(), ready: true }));
+app.get('/humanoid', (req, res) => res.sendFile(path.join(__dirname, '../public/humanoid.html')));
 
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
@@ -84,6 +87,13 @@ app.post('/api/auth/logout', (req, res) => {
 app.get('/api/auth/me', (req, res) => {
   if (!req.user) return res.status(401).json({ ok: false, error: { message: 'Not logged in' } });
   return res.status(200).json({ ok: true, data: { role: req.user.role } });
+});
+
+app.get('/api/humanoid/state', requireRole(['admin', 'editor', 'viewer']), (req, res) => {
+  return res.status(200).json({ ok: true, data: buildHumanoidState({ db, scheduler }) });
+});
+app.get('/v1/humanoid/state', requireRole(['admin', 'editor', 'viewer']), (req, res) => {
+  return res.status(200).json({ ok: true, data: buildHumanoidState({ db, scheduler }) });
 });
 
 app.post('/api/facebook/post-message', requireRole(['admin', 'editor']), fb.postMessage);
