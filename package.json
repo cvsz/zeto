@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "build": "node --check src/server.js",
+    "build": "node --check src/server.js && node --check src/db.js && node --check src/fbController.js && node --check src/scheduler.js && node --check src/contentGenerator.js && node --check src/aiAutoPoster.js && node --check src/humanoidView.js && node --check public/js/app.js && node --check public/js/humanoid.js",
     "lint": "eslint .",
     "test": "node --test",
     "check": "npm run lint && npm test && npm run build"
@@ -22,5 +22,10 @@
     "form-data": "4.0.6",
     "multer": "^2.2.0",
     "node-cron": "^4.6.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "globals": "^16.5.0"
   }
 }
