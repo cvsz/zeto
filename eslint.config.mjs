@@ -1,34 +1,28 @@
+import js from '@eslint/js';
+import globals from 'globals';
 
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import globals from "globals";
-
-export default tseslint.config(
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
+export default [
   {
-    ignores: [".next/", "node_modules/", "dist/", "build/", "coverage/", "out/", ".turbo/"],
+    ignores: ['node_modules/**', 'data/**', 'coverage/**', 'dist/**', 'build/**', 'out/**'],
   },
+  js.configs.recommended,
   {
+    files: ['**/*.js', '**/*.mjs'],
     languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         ...globals.browser,
         ...globals.node,
+        Chart: 'readonly',
       },
     },
     rules: {
-      "@typescript-eslint/no-unused-vars": "off",
-      "no-undef": "off",
-      "no-empty": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-require-imports": "off",
-      "@typescript-eslint/no-var-requires": "off",
-      "no-useless-escape": "off",
-      "no-fallthrough": "off",
-      "no-control-regex": "off",
-      "react-hooks/exhaustive-deps": "off",
-      "@typescript-eslint/triple-slash-reference": "off"
-    }
-  }
-);
+      'no-undef': 'error',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-empty': 'warn',
+      'no-useless-escape': 'warn',
+      'no-fallthrough': 'error',
+    },
+  },
+];
