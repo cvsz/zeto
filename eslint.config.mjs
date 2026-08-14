@@ -14,6 +14,7 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
+        Chart: 'readonly',
       },
     },
     rules: {
