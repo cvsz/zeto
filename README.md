@@ -1,20 +1,30 @@
-# zfbauto — Facebook Page Auto-Post Bot
+# zeto — AI Content Factory & Publishing Automation
 
 ## Language and Coding Standards
 - **Communication**: Always talk in Thai when interacting with users.
 - **Code & Technical Assets**: All code, comments, documentation, and technical definitions must be in English.
 
-> Full-featured Facebook page automation dashboard for ZeaZ Platform.
+> Zeto is the ZeaZ content-factory and publishing automation platform. The current release provides a Facebook Page automation dashboard; the execution plan expands it into a full AI-assisted Content Factory.
 
-## Features
+## Current Features
 
 - **Dashboard** — KPI overview, quick post, mini activity feed
-- **Compose** — Rich text + photo posts with live FB preview, file upload
+- **Compose** — Rich text + photo posts with live Facebook preview, file upload
 - **Post Queue** — Add, manage, and publish queued posts on demand
 - **Scheduler** — Cron-based auto-posting (default + custom schedules)
 - **Page Feed** — View and delete live Facebook posts
 - **History** — Local audit log of all publish actions
 - **Settings** — Configure schedule, template, and queue behavior
+- **Analytics** — Dashboard analytics visualizations
+- **AI Generator** — AI-assisted generation entry point
+
+## Product Direction
+
+The target architecture is an end-to-end Content Factory:
+
+`IDEATE → GENERATE → WRITE → APPROVE → SCHEDULE → PUBLISH → MONITOR → LEARN`
+
+Implementation scope, milestones, acceptance criteria, safety gates, model routing, observability, and release sequencing are defined in [`exec-planing.md`](./exec-planing.md).
 
 ## Quick Start
 
@@ -32,7 +42,7 @@ npm run dev   # starts on http://localhost:5000
 |---|---|---|
 | `FACEBOOK_PAGE_ID` | ✅ | Facebook Page numeric ID |
 | `FACEBOOK_ACCESS_TOKEN` | ✅ | Long-lived Page Access Token |
-| `FB_API_VERSION` | Optional | Graph API version (default: v19.0) |
+| `FB_API_VERSION` | Optional | Graph API version |
 | `PORT` | Optional | Server port (default: 5000) |
 | `NODE_ENV` | Optional | `development` or `production` |
 
@@ -42,10 +52,10 @@ npm run dev   # starts on http://localhost:5000
 | Method | Path | Description |
 |---|---|---|
 | POST | `/api/facebook/post-message` | Publish text post |
-| POST | `/api/facebook/post-photo` | Publish photo (url or file upload) |
+| POST | `/api/facebook/post-photo` | Publish photo (URL or file upload) |
 | GET | `/api/facebook/posts` | Get recent posts |
 | DELETE | `/api/facebook/posts/:postId` | Delete a post |
-| GET | `/api/facebook/insights` | Page stats (followers, fans) |
+| GET | `/api/facebook/insights` | Page stats |
 | GET | `/api/facebook/config` | Connection status |
 
 ### Queue
@@ -77,33 +87,37 @@ npm run dev   # starts on http://localhost:5000
 
 ## Architecture
 
-```
-apps/zfbauto/
+```text
+apps/zeto/
 ├── src/
 │   ├── server.js        # Express app, routes, multer
 │   ├── fbController.js  # Facebook Graph API + Queue/Schedule/History handlers
 │   ├── scheduler.js     # node-cron job manager
-│   └── db.js            # In-memory + JSON persistence layer
+│   └── db.js            # Current JSON persistence layer
 ├── public/
-│   ├── index.html       # SPA shell (7 pages)
-│   ├── css/style.css    # Dark theme, Outfit font, responsive
-│   └── js/app.js        # Router, data loading, all page logic
+│   ├── index.html       # SPA shell
+│   ├── css/style.css    # Responsive dashboard theme
+│   └── js/app.js        # Router, data loading, page logic
 ├── data/
-│   └── db.json          # Persisted queue, history, schedules, settings
+│   └── db.json          # Current persisted queue/history/schedules/settings
 ├── .env.example
+├── exec-planing.md
 └── package.json
 ```
 
 ## Getting a Facebook Page Access Token
 
-1. Go to [Meta Developer Portal](https://developers.facebook.com/)
-2. Create an App → Add "Pages" product
-3. Generate a Page Access Token for your page
-4. For long-lived tokens: exchange via Graph API Explorer
-5. Copy to `FACEBOOK_ACCESS_TOKEN` in `.env`
+1. Go to the Meta Developer Portal.
+2. Create an App and add the Pages product.
+3. Generate a Page Access Token for the target page.
+4. Exchange it for the appropriate long-lived token when required.
+5. Store it in `FACEBOOK_ACCESS_TOKEN` in `.env` or the production secret store.
 
 ## Security
 
-- Never commit `.env` to version control
-- Use environment-specific tokens with minimal permissions
-- Page Access Tokens should have `pages_manage_posts` permission
+- Never commit `.env` or provider tokens.
+- Use environment-specific credentials with least privilege.
+- Keep provider secrets server-side only.
+- Use scoped Page permissions required by enabled features.
+- Add auditable approval gates before autonomous publishing.
+- Production hardening requirements are tracked in `exec-planing.md`.
