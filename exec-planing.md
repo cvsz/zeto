@@ -607,7 +607,7 @@ Exit criteria:
 ### Scope
 
 - Session/event loop with canonical event catalog (spec §10).
-- Operator state machine with guarded transitions — `IDLE → LISTENING → TRANSCRIBING → THINKING → PLANNING → AWAITING_APPROVAL → EXECUTING → VERIFYING → SPEAKING → IDLE`, with `RECOVERING`/`REAUTHORIZING` for recovery, `PAUSED` for resumable interruption, and terminal `FAILED / CANCELLED / EMERGENCY_STOPPED` (terminal states have no outbound transitions; emergency stop is immediate and never shares pause semantics) — including timeout, retry, cancellation, checkpoint and recovery semantics (spec §3.3).
+- Operator state machine with guarded transitions — `IDLE → LISTENING → TRANSCRIBING → THINKING → PLANNING → AWAITING_APPROVAL → EXECUTING → VERIFYING → SPEAKING → IDLE`, with `RECOVERING`/`REAUTHORIZING` for recovery, `PAUSED` for resumable interruption (pause legal only from `PAUSABLE_STATES` — `AWAITING_APPROVAL / EXECUTING / VERIFYING / DEGRADED` ∪ `RECOVERY_STATES`; voice/planner pause defers or cancels to IDLE), `PAUSED → CANCELLED` for ordinary cancel, and terminal `FAILED / CANCELLED / EMERGENCY_STOPPED` (terminal states have no outbound transitions; emergency stop is immediate and never shares pause semantics) — including timeout, retry, cancellation, checkpoint (`previous_state`/`resume_state`) and recovery semantics (spec §3.3).
 - Intent router, planner, skill/agent registries, tool gateway, executor, observer/verifier (spec §6).
 - Voice plane: push-to-talk/VAD, streaming STT/TTS, barge-in, latency budgets and fallback matrix (spec §5).
 - Computer-use adapters (Browser/Desktop/File/Shell/Application) behind typed contracts with observe→decide→act→verify loops (spec §7).
