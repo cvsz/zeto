@@ -12,13 +12,13 @@ This document records visible product behavior from the supplied recording and t
 
 ### 1.1 Source metadata
 
-| Property        | Value                          |
-| --------------- | ------------------------------ |
-| File            | `videoplayback.mp4`            |
-| Duration        | ~251.84 s                      |
-| Resolution      | 640×360                        |
-| Frame rate      | 30 fps                         |
-| Brand surface   | "Brahma AI" (dark desktop app) |
+| Property      | Value                          |
+| ------------- | ------------------------------ |
+| File          | `videoplayback.mp4`            |
+| Duration      | ~251.84 s                      |
+| Resolution    | 640×360                        |
+| Frame rate    | 30 fps                         |
+| Brand surface | "Brahma AI" (dark desktop app) |
 
 ### 1.2 Observed UI / interaction inventory
 
@@ -43,11 +43,13 @@ The recording shows a dark desktop AI operator application with a persistent com
 
 Fill per-segment rows from a re-watch of the source. Each row links observation → requirement so no claim is unverifiable.
 
-| Timecode | Surface | Observed behavior | Requirement link | Confidence |
-| -------- | ------- | ----------------- | ---------------- | ---------- |
-| 00:00–00:05 | Command center | Branding + orb initial state | §2.2 S1; §2.3 orb states | High |
-| _(to be filled)_ | | | | |
+| Timecode         | Surface        | Observed behavior            | Requirement link         | Confidence |
+| ---------------- | -------------- | ---------------------------- | ------------------------ | ---------- |
+| 00:00–00:05      | Command center | Branding + orb initial state | §2.2 S1; §2.3 orb states | High       |
+| _(to be filled)_ |                |                              |                          |            |
 
+> **Coverage status:** scaffold only — the scene-by-scene record of the 251.84 s recording is **not yet complete**. Completion requires re-watching the source recording; this section is the capture plan, not a finished transcript.
+>
 > **Provenance rule:** do not fabricate timecodes or behaviors. Rows marked "to be filled" must be completed from the source recording only.
 
 ---
@@ -56,15 +58,15 @@ Fill per-segment rows from a re-watch of the source. Each row links observation 
 
 ### 2.1 Screen map
 
-| Screen | Purpose | Path / surface |
-| ------ | ------- | -------------- |
-| S1 Command Center | Primary operator surface (orb, telemetry, input) | `/zarvis` |
-| S2 Settings | Provider/permission/capability configuration | Settings nav |
-| S3 Sequence Builder | Compose, save, reorder, run multi-step sequences | Right panel + dialog |
-| S4 Pairing | Mobile connect via short-lived QR token | Overlay |
-| S5 Onboarding | First-run setup wizard (providers, permissions, capability checks) | Full-screen flow |
-| S6 Approval Drawer | Consequential/mutating action approval | Slide-over |
-| S7 Incident Overlay | Degraded state, non-color-only alerting | Overlay on S1 |
+| Screen              | Purpose                                                            | Path / surface       |
+| ------------------- | ------------------------------------------------------------------ | -------------------- |
+| S1 Command Center   | Primary operator surface (orb, telemetry, input)                   | `/zarvis`            |
+| S2 Settings         | Provider/permission/capability configuration                       | Settings nav         |
+| S3 Sequence Builder | Compose, save, reorder, run multi-step sequences                   | Right panel + dialog |
+| S4 Pairing          | Mobile connect via short-lived QR token                            | Overlay              |
+| S5 Onboarding       | First-run setup wizard (providers, permissions, capability checks) | Full-screen flow     |
+| S6 Approval Drawer  | Consequential/mutating action approval                             | Slide-over           |
+| S7 Incident Overlay | Degraded state, non-color-only alerting                            | Overlay on S1        |
 
 ### 2.2 Component hierarchy (S1 Command Center)
 
@@ -90,19 +92,19 @@ Command Center
 
 ### 2.3 Orb motion & animation states
 
-| Orb state | Trigger | Animation | Reduced-motion fallback |
-| --------- | ------- | --------- | ----------------------- |
-| IDLE | No active session | Slow pulse | Static glyph |
-| LISTENING | Mic active / VAD open | Rings expand, waveform | "LISTENING" label |
-| TRANSCRIBING | Speech being decoded | Streaming tick | Spinner |
-| THINKING | Planner running | Orbit speed-up | "THINKING" label |
-| EXECUTING | Tool running | Directed pulse | Progress bar |
-| VERIFYING | Postcondition check | Scan sweep | "VERIFYING" label |
-| SPEAKING | TTS active | Speaking bars | Waveform icon |
-| DEGRADED | Partial failure | Amber/red tint, non-color cue | Text + icon |
-| ERROR | Hard failure | Shake/red flash + message | Text + icon |
+| Orb state    | Trigger                                 | Animation                     | Reduced-motion fallback |
+| ------------ | --------------------------------------- | ----------------------------- | ----------------------- |
+| IDLE         | No active session                       | Slow pulse                    | Static glyph            |
+| LISTENING    | Mic active / VAD open                   | Rings expand, waveform        | "LISTENING" label       |
+| TRANSCRIBING | Speech being decoded                    | Streaming tick                | Spinner                 |
+| THINKING     | Planner running                         | Orbit speed-up                | "THINKING" label        |
+| EXECUTING    | Tool running                            | Directed pulse                | Progress bar            |
+| VERIFYING    | Postcondition check                     | Scan sweep                    | "VERIFYING" label       |
+| SPEAKING     | TTS active                              | Speaking bars                 | Waveform icon           |
+| DEGRADED     | Partial failure                         | Amber/red tint, non-color cue | Text + icon             |
+| FAILED       | Canonical `FAILED` state (hard failure) | Shake/red flash + message     | Text + icon             |
 
-Every animation is derived from real operator state (§3.3); the orb never fabricates status.
+Every animation is derived from real operator state (§3.3); the orb never fabricates status. Orb visual states are **presentations** of the canonical operator state machine — `ERROR` is not a runtime state; all failures map to canonical `FAILED` and are styled separately.
 
 ### 2.4 Responsive, error and empty states
 
@@ -170,28 +172,29 @@ Audit + Memory + Events
 
 ### 3.3 Operator state machine (transition table)
 
-States: `IDLE, LISTENING, TRANSCRIBING, THINKING, PLANNING, AWAITING_APPROVAL, EXECUTING, VERIFYING, SPEAKING, PAUSED, DEGRADED, FAILED, CANCELLED`.
+States: `IDLE, LISTENING, TRANSCRIBING, THINKING, PLANNING, AWAITING_APPROVAL, EXECUTING, VERIFYING, SPEAKING, PAUSED, DEGRADED, FAILED, CANCELLED, EMERGENCY_STOPPED`.
 
-| From | To | Trigger / Guard | Timeout | Retry | On failure |
-| ---- | -- | --------------- | ------- | ----- | ---------- |
-| IDLE | LISTENING | Push-to-talk start or VAD open; mic permission granted | Listening idle: 15 s | — | → IDLE |
-| LISTENING | TRANSCRIBING | Speech result available | STT first-token: 2 s | STT retry ×2 | → IDLE (no speech) |
-| TRANSCRIBING | THINKING | Utterance finalized | — | — | → DEGRADED |
-| THINKING | PLANNING | Intent resolved | Intent budget: 3 s | Re-route ×1 | → FAILED |
-| PLANNING | AWAITING_APPROVAL | Policy requires human approval | Approval wait: 5 min | — | → CANCELLED on reject/timeout |
-| PLANNING | EXECUTING | Auto-approved within policy (allowlisted, low risk) | — | — | → FAILED |
-| AWAITING_APPROVAL | EXECUTING | Operator approves / policy override (audited) | — | — | → CANCELLED |
-| EXECUTING | VERIFYING | Tool step completes | Step timeout (per tool) | Backoff 1 s→30 s, max 3 | → FAILED (non-retryable) |
-| VERIFYING | EXECUTING | Postcondition unmet, retry budget left | Verify timeout: 10 s | ≤ max attempts | → FAILED |
-| VERIFYING | SPEAKING | All steps verified | — | — | → DEGRADED |
-| SPEAKING | IDLE | TTS completes | TTS max: 30 s | — | → IDLE |
-| any | PAUSED | Operator pause / emergency stop | — | — | — |
-| PAUSED | IDLE | Resume from checkpoint; revoked grants re-issued only on approval | — | — | — |
-| any | DEGRADED | Partial/soft failure (e.g., one tool unavailable) | Auto-recover ≤ 30 s | Probe ×3 | → FAILED |
-| any | CANCELLED | Operator reject, plan timeout, or kill switch | Plan timeout: 15 min | — | terminal |
-| any | FAILED | Hard failure, verification exhausted, or non-retryable error | — | — | terminal; incident surfaced |
+| From              | To                                        | Trigger / Guard                                                                                  | Timeout                 | Retry                   | On failure                                             |
+| ----------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------- | ----------------------- | ------------------------------------------------------ |
+| IDLE              | LISTENING                                 | Push-to-talk start or VAD open; mic permission granted                                           | Listening idle: 15 s    | —                       | → IDLE                                                 |
+| LISTENING         | TRANSCRIBING                              | Speech result available                                                                          | STT first-token: 2 s    | STT retry ×2            | → IDLE (no speech)                                     |
+| TRANSCRIBING      | THINKING                                  | Utterance finalized                                                                              | —                       | —                       | → DEGRADED                                             |
+| THINKING          | PLANNING                                  | Intent resolved                                                                                  | Intent budget: 3 s      | Re-route ×1             | → FAILED                                               |
+| PLANNING          | AWAITING_APPROVAL                         | Policy requires human approval                                                                   | Approval wait: 5 min    | —                       | → CANCELLED on reject/timeout                          |
+| PLANNING          | EXECUTING                                 | Auto-approved within policy (allowlisted, low risk)                                              | —                       | —                       | → FAILED                                               |
+| AWAITING_APPROVAL | EXECUTING                                 | Operator approves / policy override (audited)                                                    | —                       | —                       | → CANCELLED                                            |
+| EXECUTING         | VERIFYING                                 | Tool step completes                                                                              | Step timeout (per tool) | Backoff 1 s→30 s, max 3 | → FAILED (non-retryable)                               |
+| VERIFYING         | EXECUTING                                 | Postcondition unmet, retry budget left                                                           | Verify timeout: 10 s    | ≤ max attempts          | → FAILED                                               |
+| VERIFYING         | SPEAKING                                  | All steps verified                                                                               | —                       | —                       | → DEGRADED                                             |
+| SPEAKING          | IDLE                                      | TTS completes                                                                                    | TTS max: 30 s           | —                       | → IDLE                                                 |
+| any               | PAUSED                                    | Operator pause (resumable, non-critical)                                                         | —                       | —                       | —                                                      |
+| any               | EMERGENCY_STOPPED                         | Emergency stop / kill switch: immediately revoke all ephemeral grants and cancel in-flight tools | —                       | —                       | terminal; requires explicit restart + re-authorization |
+| PAUSED            | EXECUTING / VERIFYING / AWAITING_APPROVAL | Resume from checkpoint restores the prior resumable state; grants re-issued only on approval     | —                       | —                       | → EMERGENCY_STOPPED if re-authorization fails          |
+| any               | DEGRADED                                  | Partial/soft failure (e.g., one tool unavailable)                                                | Auto-recover ≤ 30 s     | Probe ×3                | → FAILED                                               |
+| any               | CANCELLED                                 | Operator reject, plan timeout, or kill switch                                                    | Plan timeout: 15 min    | —                       | terminal                                               |
+| any               | FAILED                                    | Hard failure, verification exhausted, or non-retryable error                                     | —                       | —                       | terminal; incident surfaced                            |
 
-**Semantics:** every transition is audited (`from, to, trigger, actor, session_id, plan_id, step_id, ts`). Checkpointing at plan-step granularity enables resume from `PAUSED`/crash (§13). `FAILED`/`CANCELLED` run cleanup: revoke ephemeral grants, cancel in-flight tools, emit terminal event.
+**Semantics:** every transition is audited (`from, to, trigger, actor, session_id, plan_id, step_id, ts`). Checkpointing at plan-step granularity enables resume from `PAUSED`/crash (§13). `FAILED`/`CANCELLED`/`EMERGENCY_STOPPED` run cleanup: revoke ephemeral grants, cancel in-flight tools, emit terminal event. `EMERGENCY_STOPPED` additionally latches the kill switch and requires explicit restart and re-authorization before the runtime accepts new sessions — it must never be conflated with ordinary `PAUSED` semantics.
 
 ---
 
@@ -199,15 +202,15 @@ States: `IDLE, LISTENING, TRANSCRIBING, THINKING, PLANNING, AWAITING_APPROVAL, E
 
 ### 4.1 Command taxonomy
 
-| Category | Examples | Risk | Approval required |
-| -------- | -------- | ---- | ----------------- |
-| Navigation | "open dashboard", "go to settings" | None | No |
-| Diagnostics | "run health check", "show telemetry" | None | No |
-| Content | "draft a caption for X" | Low | No |
-| Publish | "post to Facebook" | High | Yes (publication) |
-| Sequence | "run my morning sequence (dry-run)" | Medium–High | By policy |
-| Automation | browser/desktop control | High | Yes unless allowlisted |
-| System | pause, emergency stop, credential config | Critical | Yes (admin) |
+| Category    | Examples                                 | Risk        | Approval required      |
+| ----------- | ---------------------------------------- | ----------- | ---------------------- |
+| Navigation  | "open dashboard", "go to settings"       | None        | No                     |
+| Diagnostics | "run health check", "show telemetry"     | None        | No                     |
+| Content     | "draft a caption for X"                  | Low         | No                     |
+| Publish     | "post to Facebook"                       | High        | Yes (publication)      |
+| Sequence    | "run my morning sequence (dry-run)"      | Medium–High | By policy              |
+| Automation  | browser/desktop control                  | High        | Yes unless allowlisted |
+| System      | pause, emergency stop, credential config | Critical    | Yes (admin)            |
 
 ### 4.2 Command stream event
 
@@ -256,12 +259,12 @@ Execution semantics: sequential steps; step outputs addressable (`s<N>.result`);
 - **Latency budgets:** STT first-token ≤ 2 s; TTS first-audio ≤ 1.5 s; end-to-end voice command → plan start ≤ 5 s (P95).
 - **Fallback matrix:**
 
-| Failure | Fallback |
-| ------- | -------- |
-| STT provider down | Secondary STT provider, then text-only input |
-| TTS provider down | Secondary TTS, then silent text reply |
-| Mic permission denied | Text-only with visible notice |
-| Barge-in unreliable | Disable barge-in for the session |
+| Failure               | Fallback                                     |
+| --------------------- | -------------------------------------------- |
+| STT provider down     | Secondary STT provider, then text-only input |
+| TTS provider down     | Secondary TTS, then silent text reply        |
+| Mic permission denied | Text-only with visible notice                |
+| Barge-in unreliable   | Disable barge-in for the session             |
 
 - No raw audio persistence by default; retention requires explicit policy.
 
@@ -270,6 +273,7 @@ Execution semantics: sequential steps; step outputs addressable (`s<N>.result`);
 ## 6. Agent & Orchestration Plane
 
 ### 6.1 Intent router
+
 Classify utterances to typed intents with confidence; below threshold → clarifying question; unsupported intent → visible "cannot do" message with suggestions (never silent).
 
 ### 6.2 Planner
@@ -280,7 +284,13 @@ Classify utterances to typed intents with confidence; below threshold → clarif
   "session_id": "...",
   "intent": "...",
   "steps": [
-    { "step_id": "p1", "tool": "browser_navigate", "args": {}, "risk": "low", "depends_on": [] }
+    {
+      "step_id": "p1",
+      "tool": "browser_navigate",
+      "args": {},
+      "risk": "low",
+      "depends_on": []
+    }
   ],
   "policy_verdict": "approved|approval_required|denied",
   "estimated_cost": 0,
@@ -304,24 +314,28 @@ Classify utterances to typed intents with confidence; below threshold → clarif
 ```
 
 ### 6.4 Agent registry & delegation
+
 Bounded delegation: parent agent may hand a sub-task to a registered child agent only within policy; child executes under inherited grants, emits its own provenance chain, and returns typed results. Delegation depth and fan-out are capped.
 
 ### 6.5 Tool gateway
+
 Deny-by-default; explicit grants scoped by user/workspace/session; tool schemas enforced (zod-style validation); every call carries `session_id, plan_id, step_id, risk, approval, idempotency_key`.
 
 ### 6.6 Executor
+
 Timeout, cancellation and retry per §3.3; graceful cancel propagates to adapters; orphaned tool calls are reconciled on session resume.
 
 ### 6.7 Observer / verifier
+
 Each step declares postconditions; verifier confirms them before success; failure evidence stored with the step.
 
 ### 6.8 Memory boundaries
 
-| Store | Scope | Consent | Retention |
-| ----- | ----- | ------- | --------- |
-| Working | Current session context | Implicit | Session end |
-| Episodic | Prior session summaries | Explicit opt-in | Configurable TTL |
-| Durable | User-approved facts/sequences | Explicit approval | Until revoked |
+| Store    | Scope                         | Consent           | Retention        |
+| -------- | ----------------------------- | ----------------- | ---------------- |
+| Working  | Current session context       | Implicit          | Session end      |
+| Episodic | Prior session summaries       | Explicit opt-in   | Configurable TTL |
+| Durable  | User-approved facts/sequences | Explicit approval | Until revoked    |
 
 ---
 
@@ -329,13 +343,13 @@ Each step declares postconditions; verifier confirms them before success; failur
 
 All adapters are typed and sandboxed — never raw uncontrolled shell/browser access.
 
-| Tool | Capabilities | Guardrails |
-| ---- | ------------ | ---------- |
-| `BrowserTool` | navigate, inspect DOM/a11y tree, click, type, upload, download metadata, screenshot | Origin allowlist, session-scoped profile |
-| `DesktopTool` | enumerate apps/windows, focus, keyboard/mouse, screen observation | App allowlist, no stealth |
-| `FileTool` | sandboxed read/write | Workspace roots, path policy |
-| `ShellTool` | allowlisted commands | Sandbox/container, resource+time limits |
-| `ApplicationTool` | typed adapters | API-over-coordinates preference |
+| Tool              | Capabilities                                                                        | Guardrails                               |
+| ----------------- | ----------------------------------------------------------------------------------- | ---------------------------------------- |
+| `BrowserTool`     | navigate, inspect DOM/a11y tree, click, type, upload, download metadata, screenshot | Origin allowlist, session-scoped profile |
+| `DesktopTool`     | enumerate apps/windows, focus, keyboard/mouse, screen observation                   | App allowlist, no stealth                |
+| `FileTool`        | sandboxed read/write                                                                | Workspace roots, path policy             |
+| `ShellTool`       | allowlisted commands                                                                | Sandbox/container, resource+time limits  |
+| `ApplicationTool` | typed adapters                                                                      | API-over-coordinates preference          |
 
 **Observation → action loop:** observe (a11y tree/screen) → decide (policy-checked) → act → verify → record evidence. Observed browser/screen content is **untrusted data**: it can never grant tools or change policy (prompt-injection defense).
 
@@ -343,8 +357,25 @@ All adapters are typed and sandboxed — never raw uncontrolled shell/browser ac
 
 ```json
 {
-  "request": { "session_id": "", "plan_id": "", "step_id": "", "tool": "", "action": "", "args": {}, "risk": "", "approval": "", "idempotency_key": "", "timeout_ms": 0 },
-  "response": { "ok": true, "result": {}, "evidence": [], "duration_ms": 0, "verification": "passed|failed|pending" }
+  "request": {
+    "session_id": "",
+    "plan_id": "",
+    "step_id": "",
+    "tool": "",
+    "action": "",
+    "args": {},
+    "risk": "",
+    "approval": "",
+    "idempotency_key": "",
+    "timeout_ms": 0
+  },
+  "response": {
+    "ok": true,
+    "result": {},
+    "evidence": [],
+    "duration_ms": 0,
+    "verification": "passed|failed|pending"
+  }
 }
 ```
 
@@ -360,21 +391,21 @@ All adapters are typed and sandboxed — never raw uncontrolled shell/browser ac
 - Secret redaction in UI, logs, screenshots and model context.
 - Prompt-injection defense: observed content is untrusted data, never authority.
 - Sandboxed shell/filesystem execution; rate, cost and step limits.
-- Emergency stop cancels active plans and revokes ephemeral grants.
+- Emergency stop transitions to the terminal `EMERGENCY_STOPPED` state: cancels active plans, revokes ephemeral grants immediately, and requires explicit restart and re-authorization before new sessions are accepted.
 - Pairing QR tokens short-lived, single-use, bound to an authenticated operator session.
 
 ### 8.2 Threat model / risk matrix
 
-| Threat | Vector | Control | Residual risk |
-| ------ | ------ | ------- | ------------- |
-| Prompt injection via web/screen content | Malicious page instructs tools | Content = untrusted data; no tool grant from content | Low |
-| Tool permission bypass | Step requests unlisted capability | Deny-by-default + schema validation + audit | Low |
-| Plan replay / duplicate side effect | Re-executed step | `idempotency_key` per step; transactional claims | Low |
-| Secret leakage | Logs/screenshots/context | Redaction pipeline; secret scan in CI | Low |
-| Approval bypass | Policy override abuse | Overrides audited; admin-only; 4-eyes for critical | Medium |
-| Pairing token theft | QR interception | Single-use, short TTL, session-bound | Low |
-| Unbounded cost/run | Long/looping plans | Cost/step/rate limits; plan timeout | Low |
-| Compromised provider credential | Exfiltrated token | Least-privilege, per-env rotation, audit | Medium |
+| Threat                                  | Vector                            | Control                                              | Residual risk |
+| --------------------------------------- | --------------------------------- | ---------------------------------------------------- | ------------- |
+| Prompt injection via web/screen content | Malicious page instructs tools    | Content = untrusted data; no tool grant from content | Low           |
+| Tool permission bypass                  | Step requests unlisted capability | Deny-by-default + schema validation + audit          | Low           |
+| Plan replay / duplicate side effect     | Re-executed step                  | `idempotency_key` per step; transactional claims     | Low           |
+| Secret leakage                          | Logs/screenshots/context          | Redaction pipeline; secret scan in CI                | Low           |
+| Approval bypass                         | Policy override abuse             | Overrides audited; admin-only; 4-eyes for critical   | Medium        |
+| Pairing token theft                     | QR interception                   | Single-use, short TTL, session-bound                 | Low           |
+| Unbounded cost/run                      | Long/looping plans                | Cost/step/rate limits; plan timeout                  | Low           |
+| Compromised provider credential         | Exfiltrated token                 | Least-privilege, per-env rotation, audit             | Medium        |
 
 ---
 
@@ -382,41 +413,41 @@ All adapters are typed and sandboxed — never raw uncontrolled shell/browser ac
 
 Transport: SSE/WebSocket for transcript, command-stream, plan-step, telemetry and speech state updates. REST for commands and queries.
 
-| Endpoint | Method | Request | Response / events |
-| -------- | ------ | ------- | ----------------- |
-| `/v1/operator/sessions` | POST | `{ mode, capabilities }` | `{ session_id, pairing_token? }` |
-| `/v1/operator/sessions/:id/events` | SSE | — | `event` stream (catalog §10) |
-| `/v1/operator/sessions/:id/commands` | POST | `{ text?, audio_ref?, sequence_id? }` | `{ command_id, plan_id }` |
-| `/v1/operator/sessions/:id/cancel` | POST | `{ reason }` | `{ status: "cancelling" }` |
-| `/v1/operator/plans/:id` | GET | — | plan object (§6.2) |
-| `/v1/operator/plans/:id/approve` | POST | `{ decision }` | updated plan |
-| `/v1/operator/plans/:id/reject` | POST | `{ reason }` | updated plan |
-| `/v1/operator/sequences` | GET/POST | sequence object (§4.3) | sequence list |
-| `/v1/operator/sequences/:id/run` | POST | `{ dry_run }` | `{ run_id }` |
-| `/v1/operator/skills` | GET | — | skill manifests (§6.3) |
-| `/v1/operator/agents` | GET | — | agent registry |
-| `/v1/operator/tools` | GET | — | tool catalog + grants |
-| `/v1/operator/pairing` | POST | — | short-lived QR token |
-| `/v1/operator/telemetry` | SSE | — | CPU/RAM/network/worker/queue/model/tool health |
+| Endpoint                             | Method   | Request                               | Response / events                              |
+| ------------------------------------ | -------- | ------------------------------------- | ---------------------------------------------- |
+| `/v1/operator/sessions`              | POST     | `{ mode, capabilities }`              | `{ session_id, pairing_token? }`               |
+| `/v1/operator/sessions/:id/events`   | SSE      | —                                     | `event` stream (catalog §10)                   |
+| `/v1/operator/sessions/:id/commands` | POST     | `{ text?, audio_ref?, sequence_id? }` | `{ command_id, plan_id }`                      |
+| `/v1/operator/sessions/:id/cancel`   | POST     | `{ reason }`                          | `{ status: "cancelling" }`                     |
+| `/v1/operator/plans/:id`             | GET      | —                                     | plan object (§6.2)                             |
+| `/v1/operator/plans/:id/approve`     | POST     | `{ decision }`                        | updated plan                                   |
+| `/v1/operator/plans/:id/reject`      | POST     | `{ reason }`                          | updated plan                                   |
+| `/v1/operator/sequences`             | GET/POST | sequence object (§4.3)                | sequence list                                  |
+| `/v1/operator/sequences/:id/run`     | POST     | `{ dry_run }`                         | `{ run_id }`                                   |
+| `/v1/operator/skills`                | GET      | —                                     | skill manifests (§6.3)                         |
+| `/v1/operator/agents`                | GET      | —                                     | agent registry                                 |
+| `/v1/operator/tools`                 | GET      | —                                     | tool catalog + grants                          |
+| `/v1/operator/pairing`               | POST     | —                                     | short-lived QR token                           |
+| `/v1/operator/telemetry`             | SSE      | —                                     | CPU/RAM/network/worker/queue/model/tool health |
 
 ---
 
 ## 10. Event Catalog (canonical)
 
-| Event | Actor | Payload (key) | Consumers |
-| ----- | ----- | ------------- | --------- |
-| `session.started` / `session.ended` | system | session_id, mode | audit, telemetry |
-| `input.received` | operator | type (text/voice/sequence) | transcript, orb |
-| `transcript.partial` / `transcript.final` | STT | text, confidence | transcript, orb |
-| `intent.resolved` | router | intent, confidence | planner, audit |
-| `plan.created` / `plan.approved` / `plan.rejected` | planner/policy | plan_id, verdict | UI, audit |
-| `step.started` / `step.finished` / `step.failed` | executor | plan_id, step_id, tool, result | command stream, telemetry |
-| `tool.require_approval` | policy | step_id, risk | approval drawer |
-| `verification.passed` / `verification.failed` | verifier | step_id, evidence | command stream |
-| `speech.started` / `speech.ended` | TTS | text | orb, transcript |
-| `pairing.issued` / `pairing.consumed` | system | token_id | pairing UI |
-| `incident.raised` / `incident.resolved` | monitor | level, scope | incident overlay, SLOs |
-| `emergency.stop` | operator | reason | all subscribers |
+| Event                                              | Actor          | Payload (key)                  | Consumers                 |
+| -------------------------------------------------- | -------------- | ------------------------------ | ------------------------- |
+| `session.started` / `session.ended`                | system         | session_id, mode               | audit, telemetry          |
+| `input.received`                                   | operator       | type (text/voice/sequence)     | transcript, orb           |
+| `transcript.partial` / `transcript.final`          | STT            | text, confidence               | transcript, orb           |
+| `intent.resolved`                                  | router         | intent, confidence             | planner, audit            |
+| `plan.created` / `plan.approved` / `plan.rejected` | planner/policy | plan_id, verdict               | UI, audit                 |
+| `step.started` / `step.finished` / `step.failed`   | executor       | plan_id, step_id, tool, result | command stream, telemetry |
+| `tool.require_approval`                            | policy         | step_id, risk                  | approval drawer           |
+| `verification.passed` / `verification.failed`      | verifier       | step_id, evidence              | command stream            |
+| `speech.started` / `speech.ended`                  | TTS            | text                           | orb, transcript           |
+| `pairing.issued` / `pairing.consumed`              | system         | token_id                       | pairing UI                |
+| `incident.raised` / `incident.resolved`            | monitor        | level, scope                   | incident overlay, SLOs    |
+| `emergency.stop`                                   | operator       | reason                         | all subscribers           |
 
 ---
 
@@ -424,16 +455,16 @@ Transport: SSE/WebSocket for transcript, command-stream, plan-step, telemetry an
 
 Entities: `operator_commands, operator_events, operator_plans, operator_plan_steps, operator_sequences, operator_sequence_steps, skill_manifests, agent_manifests, tool_grants, tool_executions, verification_evidence, voice_sessions, pairing_tokens`.
 
-| Entity | Key relations | Indexes | Retention |
-| ------ | ------------- | ------- | --------- |
-| `operator_plans` | 1:N `operator_plan_steps` | `session_id, created_at` | 90 d |
-| `operator_plan_steps` | N:1 plan; 1:N `tool_executions` | `plan_id, (status)` | 90 d |
-| `operator_events` | N:1 session | `session_id, ts, (type)` | 180 d (audit immutable) |
-| `tool_executions` | N:1 step | `(idempotency_key)` unique | 90 d |
-| `verification_evidence` | 1:1 step/execution | `step_id` | 90 d |
-| `pairing_tokens` | 1:1 session | `(token_hash)` unique | TTL 5 min |
-| `voice_sessions` | 1:1 session | `session_id` | 24 h (no raw audio by default) |
-| `skill_manifests`, `agent_manifests`, `tool_grants` | registry | `(id, version)` | indefinite (versioned) |
+| Entity                                              | Key relations                   | Indexes                    | Retention                      |
+| --------------------------------------------------- | ------------------------------- | -------------------------- | ------------------------------ |
+| `operator_plans`                                    | 1:N `operator_plan_steps`       | `session_id, created_at`   | 90 d                           |
+| `operator_plan_steps`                               | N:1 plan; 1:N `tool_executions` | `plan_id, (status)`        | 90 d                           |
+| `operator_events`                                   | N:1 session                     | `session_id, ts, (type)`   | 180 d (audit immutable)        |
+| `tool_executions`                                   | N:1 step                        | `(idempotency_key)` unique | 90 d                           |
+| `verification_evidence`                             | 1:1 step/execution              | `step_id`                  | 90 d                           |
+| `pairing_tokens`                                    | 1:1 session                     | `(token_hash)` unique      | TTL 5 min                      |
+| `voice_sessions`                                    | 1:1 session                     | `session_id`               | 24 h (no raw audio by default) |
+| `skill_manifests`, `agent_manifests`, `tool_grants` | registry                        | `(id, version)`            | indefinite (versioned)         |
 
 Audit events are append-only; all others are mutable operational state. Retention is configurable per deployment.
 
@@ -445,15 +476,15 @@ Audit events are append-only; all others are mutable operational state. Retentio
 **Traces:** one trace per command: input → intent → plan → step → tool → verify → response, with `session_id`/`plan_id`/`step_id` as span attributes.
 **SLOs (target):**
 
-| SLO | Target |
-| --- | ------ |
-| Command → plan start (text) | ≤ 2 s P95 |
-| Voice first-token | ≤ 2 s P95 |
-| Tool success rate (allowlisted) | ≥ 99% |
-| Plan completion (no incident) | ≥ 98% |
-| Approval decision latency | ≤ 30 s P95 |
-| Operator surface availability | ≥ 99.9% |
-| Secret leakage incidents | 0 |
+| SLO                             | Target     |
+| ------------------------------- | ---------- |
+| Command → plan start (text)     | ≤ 2 s P95  |
+| Voice first-token               | ≤ 2 s P95  |
+| Tool success rate (allowlisted) | ≥ 99%      |
+| Plan completion (no incident)   | ≥ 98%      |
+| Approval decision latency       | ≤ 30 s P95 |
+| Operator surface availability   | ≥ 99.9%    |
+| Secret leakage incidents        | 0          |
 
 ---
 
@@ -462,6 +493,7 @@ Audit events are append-only; all others are mutable operational state. Retentio
 - **Crash:** session state reconstructible from `operator_events`; in-flight steps reconciled via `idempotency_key`; non-terminal plans marked for resume.
 - **Reconnect:** SSE/WebSocket resume with last `sequence_id`; UI replays command stream from persisted events.
 - **Checkpoint:** plan-step granularity; resume from last verified step; unverified steps re-verify before continuation.
+- **Pause vs emergency stop:** `PAUSED` resumes to the prior resumable state (`EXECUTING`/`VERIFYING`/`AWAITING_APPROVAL`); `EMERGENCY_STOPPED` is terminal and requires explicit restart + re-authorization.
 - **Dead-letter:** steps failing past retry budget land in dead-letter with incident raised; operator may retry, cancel, or quarantine.
 - **Backup/restore:** covered by `scripts/backup.sh` + `scripts/verify-backup.sh`; operator tables included in restore drills.
 
@@ -484,15 +516,15 @@ Audit events are append-only; all others are mutable operational state. Retentio
 
 ### 14.1 Acceptance matrix (measurable)
 
-| Gate | Exit criterion |
-| ---- | -------------- |
+| Gate          | Exit criterion                                                          |
+| ------------- | ----------------------------------------------------------------------- |
 | State machine | All §3.3 transitions covered by tests; timeout/retry/cancel paths green |
-| Policy | Bypass attempts blocked (test suite); approval matrix enforced |
-| Security | Prompt-injection + secret-leakage suites green; trivy/gitleaks clean |
-| Voice | Latency SLOs met in staging; fallback matrix exercised |
-| E2E | Full voice/text → verified action flow passes in staging |
-| Recovery | Crash mid-plan resumes without duplicate side effects |
-| Soak | 12 h operator session, zero unrecoverable failures |
+| Policy        | Bypass attempts blocked (test suite); approval matrix enforced          |
+| Security      | Prompt-injection + secret-leakage suites green; trivy/gitleaks clean    |
+| Voice         | Latency SLOs met in staging; fallback matrix exercised                  |
+| E2E           | Full voice/text → verified action flow passes in staging                |
+| Recovery      | Crash mid-plan resumes without duplicate side effects                   |
+| Soak          | 12 h operator session, zero unrecoverable failures                      |
 
 ---
 
