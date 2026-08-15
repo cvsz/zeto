@@ -4,19 +4,23 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function buildHumanoidState({
+async function buildZariusState({
   db,
   scheduler,
   now = new Date(),
   processInfo = {},
 }) {
-  const queue = db.queue.getAll();
-  const pending = db.queue.getPending();
-  const review = db.queue.getPendingReview();
-  const schedules = db.schedules.getAll();
-  const history = db.history.getAll(null, 50);
-  const pages = db.pages.getAll();
-  const settings = db.settings.get() || {};
+  const [queue, pending, review, schedules, history, pages, settings] =
+    await Promise.all([
+      db.queue.getAll(),
+      db.queue.getPending(),
+      db.queue.getPendingReview(),
+      db.schedules.getAll(),
+      db.history.getAll(null, 50),
+      db.pages.getAll(),
+      db.settings.get(),
+    ]);
+  const settingsData = settings || {};
   const schedulerStatus = scheduler.getStatus();
 
   const failed = history.filter(
@@ -29,7 +33,7 @@ function buildHumanoidState({
     (item) => item.enabled !== false,
   ).length;
   const enabledPages = pages.filter((item) => item.enabled !== false).length;
-  const autopilotEnabled = Boolean(settings.aiAutoPoster?.enabled);
+  const autopilotEnabled = Boolean(settingsData.aiAutoPoster?.enabled);
 
   const pressure = pending.length + review.length * 2 + failed * 3;
   const confidence = clamp(100 - pressure * 4, 0, 100);
@@ -44,7 +48,7 @@ function buildHumanoidState({
     generatedAt: now.toISOString(),
     identity: {
       product: "Zeto",
-      view: "humanoid",
+      view: "zarius",
       mode: autopilotEnabled ? "AUTO-PILOT" : "OPERATOR",
       state: alertLevel === "critical" ? "DEGRADED" : "ONLINE",
     },
@@ -52,7 +56,8 @@ function buildHumanoidState({
       confidence,
       load: clamp(
         Math.round(
-          (queue.length / Math.max(Number(settings.maxQueueSize) || 100, 1)) *
+          (queue.length /
+            Math.max(Number(settingsData.maxQueueSize) || 100, 1)) *
             100,
         ),
         0,
@@ -111,4 +116,4 @@ function buildHumanoidState({
   };
 }
 
-module.exports = { buildHumanoidState };
+module.exports = { buildZariusState };

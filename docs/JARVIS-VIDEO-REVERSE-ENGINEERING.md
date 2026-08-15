@@ -35,8 +35,8 @@ Exceptional states: `PAUSED`, `DEGRADED`, `FAILED`, `CANCELLED`.
 
 ### Frontend
 
-- Z.A.R.V.I.S. card integrated with the existing Humanoid Operator View.
-- Animated orb/humanoid renderer driven by real operator state.
+- Z.A.R.V.I.S. card integrated with the existing Z.A.R.I.U.S. (Zeto Autonomous Runtime Intelligence & Unified System) operator view.
+- Animated orb/zarius renderer driven by real operator state.
 - Push-to-talk with explicit microphone permission and visible recording state.
 - Streaming transcript and response surface.
 - Command Stream with timestamp, actor, tool, target, result, duration and correlation ID.

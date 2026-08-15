@@ -6,7 +6,7 @@
 >
 > Baseline: v1.1.0 Facebook Page automation dashboard evolving into a complete AI Content Factory.
 >
-> Visual reverse-engineering note: the Humanoid View requirements below are derived from the screenshot supplied on 2026-08-15. A full video file was not present in the conversation at the time of this revision; video-specific motion, transitions, gestures, menus, and hidden interactions must be reconciled when the video is supplied.
+> Visual reverse-engineering note: the Z.A.R.I.U.S. requirements below are derived from the screenshot supplied on 2026-08-15. A full video file was not present in the conversation at the time of this revision; video-specific motion, transitions, gestures, menus, and hidden interactions must be reconciled when the video is supplied.
 
 ## 1. Mission
 
@@ -118,7 +118,7 @@ Migration checklist:
 ```mermaid
 flowchart LR
     UI[Zeto Dashboard] --> API[/v1 API Gateway]
-    HUM[Humanoid Operator View] --> API
+    HUM[Z.A.R.I.U.S. Operator View] --> API
     API --> AUTH[Auth / RBAC / Policy]
     API --> IDEAS[M01 Strategy]
     API --> GEN[M02-M05 Generation]
@@ -268,7 +268,7 @@ Canonical `OperatorSnapshot` contract:
 | M08    | Analytics Dashboard     | KPI/dashboard views                | Daily factory report | Weekly executive review       |
 | M09    | Automation & API        | End-to-end workflows               | Pipeline health      | Cost/latency optimization     |
 | M10    | QA/Brand Safety         | 12-point score + approval          | Approval routing     | Calibration of policy weights |
-| M11    | Humanoid Operator       | Live system twin/control room      | Operator awareness   | Attention prioritization      |
+| M11    | Z.A.R.I.U.S. Operator   | Live system twin/control room      | Operator awareness   | Attention prioritization      |
 
 # 8. Delivery Phases
 
@@ -516,18 +516,20 @@ Exit criteria:
 - No fabricated values.
 - Daily and weekly reports use the same source metrics.
 
-## Phase 6A / M11 — Humanoid Neural Operator View
+## Phase 6A / M11 — Z.A.R.I.U.S. Neural Operator View
+
+**Z.A.R.I.U.S.** = **Zeto Autonomous Runtime Intelligence & Unified System** — the live system twin / operator control surface for Zeto.
 
 ### Visual source and intent
 
-The supplied screenshot shows a dark operator workstation with a large display presenting a side-profile humanoid head rendered as thousands of cyan/gold particles, with a bright energy/core point and dense control surfaces around it. Zeto will implement this as a **live system twin**, not a cosmetic animation.
+The supplied screenshot shows a dark operator workstation with a large display presenting a side-profile Z.A.R.I.U.S. head rendered as thousands of cyan/gold particles, with a bright energy/core point and dense control surfaces around it. Zeto will implement this as a **live system twin**, not a cosmetic animation.
 
 ### Current implementation slice
 
-- [x] Standalone `/humanoid` operator surface.
-- [x] Canvas point-cloud humanoid visualization without external 3D dependency.
+- [x] Standalone `/zarius` operator surface.
+- [x] Canvas point-cloud zarius visualization without external 3D dependency.
 - [x] Live backend-derived queue/approval/schedule/history telemetry.
-- [x] Authenticated `/v1/humanoid/state` endpoint.
+- [x] Authenticated `/v1/zarius/state` endpoint.
 - [x] Module/agent matrix for M01-M10/M11 operational state.
 - [x] Runtime Node/uptime/scheduler visibility.
 - [x] Unit test for operator-state derivation.
@@ -548,10 +550,10 @@ Frontend:
 
 Backend:
 
-- `/v1/humanoid/state` — current system twin snapshot.
-- `/v1/humanoid/timeline` — historical snapshots.
-- `/v1/humanoid/modules/:id` — module detail and health evidence.
-- `/v1/humanoid/commands` — admin-only allowlisted operator commands.
+- `/v1/zarius/state` — current system twin snapshot.
+- `/v1/zarius/timeline` — historical snapshots.
+- `/v1/zarius/modules/:id` — module detail and health evidence.
+- `/v1/zarius/commands` — admin-only allowlisted operator commands.
 - Server-Sent Events or WebSocket transport for live events after durable event foundation exists.
 - State sourced from PostgreSQL/workflows/metrics/alerts/providers, never random dashboard data.
 - Snapshot provenance, sequence numbers and correlation IDs.
@@ -567,7 +569,7 @@ Operator commands must be allowlisted and RBAC-protected, including:
 
 No arbitrary shell execution is exposed through the UI.
 
-Humanoid semantics:
+Z.A.R.I.U.S. semantics:
 
 - `confidence` = derived operational confidence, with documented formula/version.
 - `neural_load` = normalized queue/worker/provider pressure.
@@ -697,7 +699,7 @@ Performance:
 - Queue throughput benchmark.
 - Publish/generation latency objectives.
 - Browser performance budget.
-- Humanoid view memory/FPS budget.
+- Z.A.R.I.U.S. view memory/FPS budget.
 
 ## 9. Continuous 30-Minute Engineering Verification Loop
 
@@ -775,7 +777,7 @@ Mandatory categories by final release:
 - Event/outbox tests.
 - Security tests including SSRF/upload/rate-limit/secret leakage.
 - Browser/UI smoke tests.
-- Humanoid view state/render smoke tests.
+- Z.A.R.I.U.S. view state/render smoke tests.
 - End-to-end factory workflow tests.
 - Backup/restore test.
 - Rollback test.
@@ -814,7 +816,7 @@ A release candidate must attach evidence for:
 - Provider-secret leakage tests pass.
 - Full end-to-end factory workflow passes in staging.
 - AUTO-PILOT kill switch is proven.
-- Humanoid Operator View reflects real system state and degrades safely when disconnected.
+- Z.A.R.I.U.S. operator view reflects real system state and degrades safely when disconnected.
 - Multi-platform adapters meet the shared contract for enabled release platforms.
 - Observability/SLO alerts are operational.
 - Backup restore and incident exercises have passed.

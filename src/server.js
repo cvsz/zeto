@@ -16,7 +16,7 @@ const {
   collectOperationalMetrics,
 } = require("./observability/metrics");
 const { readSecret } = require("./security/secrets");
-const { buildHumanoidState } = require("./humanoidView");
+const { buildZariusState } = require("./zariusView");
 
 dotenv.config();
 
@@ -572,28 +572,34 @@ if (databasePool) {
   );
 }
 
-// ── Humanoid operator view ────────────────────────────────────────────────────
-app.get("/humanoid", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/humanoid.html"));
+// ── Z.A.R.I.U.S. operator view ─────────────────────────────────────────────────
+app.get("/zarius", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/zarius.html"));
 });
 
 app.get(
-  "/api/humanoid/state",
+  "/api/zarius/state",
   requireRole(["admin", "editor", "viewer"]),
-  (req, res) => {
-    return res
-      .status(200)
-      .json({ ok: true, data: buildHumanoidState({ db, scheduler }) });
+  async (req, res, next) => {
+    try {
+      const data = await buildZariusState({ db, scheduler });
+      return res.status(200).json({ ok: true, data });
+    } catch (error) {
+      return next(error);
+    }
   },
 );
 
 app.get(
-  "/v1/humanoid/state",
+  "/v1/zarius/state",
   requireRole(["admin", "editor", "viewer"]),
-  (req, res) => {
-    return res
-      .status(200)
-      .json({ ok: true, data: buildHumanoidState({ db, scheduler }) });
+  async (req, res, next) => {
+    try {
+      const data = await buildZariusState({ db, scheduler });
+      return res.status(200).json({ ok: true, data });
+    } catch (error) {
+      return next(error);
+    }
   },
 );
 

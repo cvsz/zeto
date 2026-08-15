@@ -14,7 +14,7 @@
     "db:backup": "scripts/backup.sh",
     "db:verify-backup": "scripts/verify-backup.sh",
     "load:baseline": "node scripts/load-baseline.js",
-    "build": "node --check src/server.js && node --check src/db.js && node --check src/fbController.js && node --check src/scheduler.js && node --check src/contentGenerator.js && node --check src/aiAutoPoster.js && node --check src/humanoidView.js && node --check public/js/app.js && node --check public/js/humanoid.js && node --check public/js/arin.js",
+    "build": "node --check src/server.js && node --check src/db.js && node --check src/fbController.js && node --check src/scheduler.js && node --check src/contentGenerator.js && node --check src/aiAutoPoster.js && node --check src/zariusView.js && node --check public/js/app.js && node --check public/js/zarius.js && node --check public/js/arin.js",
     "lint": "eslint src public/js test",
     "format": "prettier --write \"{src,public/js,test}/**/*.js\" \"*.{json,md,mjs}\"",
     "format:check": "prettier --check \"{src,public/js,test}/**/*.js\" \"*.{json,md,mjs}\"",
