@@ -786,19 +786,19 @@ Mandatory categories by final release:
 
 A release candidate must attach evidence for:
 
-| Gate | Required evidence |
-|---|---|
-| Correctness | CI unit/integration/E2E results |
-| Database | Migration + backup/restore proof |
-| Publishing safety | Idempotency/duplicate tests |
-| Approval safety | Bypass-negative tests |
-| Provider safety | Secret leakage + fallback tests |
-| Security | Code/dependency/container scans |
-| Reliability | Retry/DLQ/restart/soak evidence |
-| Performance | API/worker/browser baseline |
-| Observability | Logs/metrics/traces visible in staging |
-| Operations | Runbook/incident/rollback docs |
-| UX | Responsive/accessibility/visual regression evidence |
+| Gate              | Required evidence                                   |
+| ----------------- | --------------------------------------------------- |
+| Correctness       | CI unit/integration/E2E results                     |
+| Database          | Migration + backup/restore proof                    |
+| Publishing safety | Idempotency/duplicate tests                         |
+| Approval safety   | Bypass-negative tests                               |
+| Provider safety   | Secret leakage + fallback tests                     |
+| Security          | Code/dependency/container scans                     |
+| Reliability       | Retry/DLQ/restart/soak evidence                     |
+| Performance       | API/worker/browser baseline                         |
+| Observability     | Logs/metrics/traces visible in staging              |
+| Operations        | Runbook/incident/rollback docs                      |
+| UX                | Responsive/accessibility/visual regression evidence |
 
 ## 13. Final Release Exit Criteria
 

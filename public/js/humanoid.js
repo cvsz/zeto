@@ -1,8 +1,8 @@
 (() => {
-  'use strict';
+  "use strict";
 
-  const canvas = document.getElementById('humanoid-canvas');
-  const ctx = canvas.getContext('2d', { alpha: false });
+  const canvas = document.getElementById("humanoid-canvas");
+  const ctx = canvas.getContext("2d", { alpha: false });
   let points = [];
   let state = null;
   let frame = 0;
@@ -20,14 +20,21 @@
     // Side-profile-inspired silhouette assembled from overlapping ellipses.
     const skull = ((x + 0.08) / 0.58) ** 2 + ((y + 0.12) / 0.72) ** 2 < 1;
     const face = ((x - 0.38) / 0.34) ** 2 + ((y + 0.03) / 0.52) ** 2 < 1;
-    const neck = x > -0.55 && x < -0.05 && y > 0.35 && y < 1.0 && (x + 0.28) > (y - 0.86) * 0.33;
-    const jawCut = y > 0.30 && x > 0.12 && x < 0.58 && y > 0.92 - x * 0.8;
+    const neck =
+      x > -0.55 &&
+      x < -0.05 &&
+      y > 0.35 &&
+      y < 1.0 &&
+      x + 0.28 > (y - 0.86) * 0.33;
+    const jawCut = y > 0.3 && x > 0.12 && x < 0.58 && y > 0.92 - x * 0.8;
     const rearCut = x < -0.42 && y > 0.33 && y < 0.83;
     return (skull || face || neck) && !jawCut && !rearCut;
   }
 
   function seedPoints(width, height) {
-    const count = Math.round(Math.min(4200, Math.max(1700, width * height / 175)));
+    const count = Math.round(
+      Math.min(4200, Math.max(1700, (width * height) / 175)),
+    );
     const next = [];
     for (let i = 0; i < count; i += 1) {
       let x;
@@ -62,7 +69,7 @@
     const rect = canvas.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    ctx.fillStyle = '#03070c';
+    ctx.fillStyle = "#03070c";
     ctx.fillRect(0, 0, width, height);
 
     const cx = width * 0.44;
@@ -83,12 +90,12 @@
     }
 
     // Neural core.
-    const coreX = cx + scale * 0.20;
+    const coreX = cx + scale * 0.2;
     const coreY = cy - scale * 0.12;
     const core = ctx.createRadialGradient(coreX, coreY, 1, coreX, coreY, 48);
     core.addColorStop(0, `rgba(246,220,162,${0.45 + confidence / 200})`);
-    core.addColorStop(0.18, 'rgba(78,211,255,.35)');
-    core.addColorStop(1, 'rgba(0,0,0,0)');
+    core.addColorStop(0.18, "rgba(78,211,255,.35)");
+    core.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = core;
     ctx.fillRect(coreX - 50, coreY - 50, 100, 100);
 
@@ -96,9 +103,9 @@
     const baseX = cx - scale * 0.05;
     const baseY = cy + scale * 0.79;
     const glow = ctx.createRadialGradient(baseX, baseY, 0, baseX, baseY, 58);
-    glow.addColorStop(0, 'rgba(95,226,255,.98)');
-    glow.addColorStop(.18, 'rgba(0,169,236,.62)');
-    glow.addColorStop(1, 'rgba(0,169,236,0)');
+    glow.addColorStop(0, "rgba(95,226,255,.98)");
+    glow.addColorStop(0.18, "rgba(0,169,236,.62)");
+    glow.addColorStop(1, "rgba(0,169,236,0)");
     ctx.fillStyle = glow;
     ctx.fillRect(baseX - 60, baseY - 60, 120, 120);
 
@@ -107,7 +114,13 @@
     for (let r = 0; r < 5; r += 1) {
       ctx.beginPath();
       ctx.strokeStyle = `rgba(66,204,255,${0.24 - r * 0.035})`;
-      ctx.arc(cx - scale * 0.42, cy + scale * 0.48, 38 + r * 17 + Math.sin(frame * .02 + r) * 3, Math.PI * 1.08, Math.PI * 1.78);
+      ctx.arc(
+        cx - scale * 0.42,
+        cy + scale * 0.48,
+        38 + r * 17 + Math.sin(frame * 0.02 + r) * 3,
+        Math.PI * 1.08,
+        Math.PI * 1.78,
+      );
       ctx.stroke();
     }
 
@@ -130,61 +143,73 @@
 
   function renderState(data) {
     state = data;
-    setText('identity-state', `${data.identity.state} / ${data.identity.product}`);
-    setText('mode', data.identity.mode);
-    setText('focus', `FOCUS: ${data.neural.focus}`);
-    setText('confidence', `${data.neural.confidence}%`);
-    setText('load', `${data.neural.load}%`);
-    setText('alert', data.neural.alertLevel.toUpperCase());
-    setText('queued', data.factory.queued);
-    setText('pending', data.factory.pending);
-    setText('approval', data.factory.awaitingApproval);
-    setText('schedules', data.factory.enabledSchedules);
-    setText('published', data.factory.publishedRecent);
-    setText('failed', data.factory.failedRecent);
-    setText('runtime-node', data.runtime.node);
-    setText('runtime-uptime', fmtUptime(data.runtime.uptimeSeconds));
-    setText('runtime-scheduler', data.runtime.scheduler?.running === false ? 'PAUSED' : 'ACTIVE');
-    setText('updated', new Date(data.generatedAt).toLocaleTimeString());
+    setText(
+      "identity-state",
+      `${data.identity.state} / ${data.identity.product}`,
+    );
+    setText("mode", data.identity.mode);
+    setText("focus", `FOCUS: ${data.neural.focus}`);
+    setText("confidence", `${data.neural.confidence}%`);
+    setText("load", `${data.neural.load}%`);
+    setText("alert", data.neural.alertLevel.toUpperCase());
+    setText("queued", data.factory.queued);
+    setText("pending", data.factory.pending);
+    setText("approval", data.factory.awaitingApproval);
+    setText("schedules", data.factory.enabledSchedules);
+    setText("published", data.factory.publishedRecent);
+    setText("failed", data.factory.failedRecent);
+    setText("runtime-node", data.runtime.node);
+    setText("runtime-uptime", fmtUptime(data.runtime.uptimeSeconds));
+    setText(
+      "runtime-scheduler",
+      data.runtime.scheduler?.running === false ? "PAUSED" : "ACTIVE",
+    );
+    setText("updated", new Date(data.generatedAt).toLocaleTimeString());
 
-    const list = document.getElementById('module-list');
-    list.innerHTML = data.modules.map(module => `
+    const list = document.getElementById("module-list");
+    list.innerHTML = data.modules
+      .map(
+        (module) => `
       <div class="module">
         <span class="module-id">${module.id}</span>
         <span class="module-name">${module.name}</span>
         <span class="module-state ${module.state}">${module.state}</span>
       </div>
-    `).join('');
+    `,
+      )
+      .join("");
   }
 
   async function refreshState() {
-    const pill = document.getElementById('connection-pill');
-    const token = localStorage.getItem('zeto_token') || localStorage.getItem('zfbauto_token');
+    const pill = document.getElementById("connection-pill");
+    const token =
+      localStorage.getItem("zeto_token") ||
+      localStorage.getItem("zfbauto_token");
     if (!token) {
-      pill.textContent = 'AUTH REQUIRED';
-      pill.className = 'pill offline';
+      pill.textContent = "AUTH REQUIRED";
+      pill.className = "pill offline";
       return;
     }
 
     try {
-      const response = await fetch('/v1/humanoid/state', {
+      const response = await fetch("/v1/humanoid/state", {
         headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store',
+        cache: "no-store",
       });
-      if (response.status === 401) throw new Error('Session expired');
+      if (response.status === 401) throw new Error("Session expired");
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
       renderState(payload.data);
-      pill.textContent = 'LIVE';
-      pill.className = 'pill online';
+      pill.textContent = "LIVE";
+      pill.className = "pill online";
     } catch (error) {
-      pill.textContent = 'OFFLINE';
-      pill.className = 'pill offline';
-      setText('identity-state', error.message.toUpperCase());
+      pill.textContent = "OFFLINE";
+      pill.className = "pill offline";
+      setText("identity-state", error.message.toUpperCase());
     }
   }
 
-  window.addEventListener('resize', resize, { passive: true });
+  window.addEventListener("resize", resize, { passive: true });
   resize();
   render();
   refreshState();
