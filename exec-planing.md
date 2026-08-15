@@ -6,7 +6,7 @@
 >
 > Baseline: v1.1.0 Facebook Page automation dashboard evolving into a complete AI Content Factory.
 >
-> Visual reverse-engineering note: the Z.A.R.V.I.S. requirements below are derived from the screenshot supplied on 2026-08-15. A full video file was not present in the conversation at the time of this revision; video-specific motion, transitions, gestures, menus, and hidden interactions must be reconciled when the video is supplied.
+> Visual reverse-engineering note: the Z.A.R.V.I.S. requirements below are derived from the supplied screenshot and the recorded operator demo (`videoplayback.mp4`, ~251.84 s, 640×360, 30 fps). The authoritative reverse-engineering and implementation specification for **M12 — Z.A.R.V.I.S. Operator Runtime** is `docs/JARVIS-VIDEO-REVERSE-ENGINEERING.md`; this plan defers to it for state-transition semantics, contracts, schemas, event catalog, persistence, SLOs and acceptance criteria.
 
 ## 1. Mission
 
@@ -520,6 +520,8 @@ Exit criteria:
 
 **Z.A.R.V.I.S.** = **Zeto Autonomous Runtime Virtual Intelligence System** — the live system twin / operator control surface for Zeto.
 
+> **M12 — Z.A.R.V.I.S. Operator Runtime** (the agent/voice/computer-use runtime, distinct from this M11 operator view) is specified in `docs/JARVIS-VIDEO-REVERSE-ENGINEERING.md`, which is the source of truth for its state-transition table, contracts, schemas, event catalog, persistence model, SLOs and acceptance matrix.
+
 ### Visual source and intent
 
 The supplied screenshot shows a dark operator workstation with a large display presenting a side-profile Z.A.R.V.I.S. head rendered as thousands of cyan/gold particles, with a bright energy/core point and dense control surfaces around it. Zeto will implement this as a **live system twin**, not a cosmetic animation.
@@ -595,6 +597,53 @@ Exit criteria:
 - Admin commands are audited/idempotent where applicable.
 - 1-hour soak test has no unbounded memory growth.
 - Rendering meets performance budget on supported targets.
+
+## Phase 6B / M12 — Z.A.R.V.I.S. Operator Runtime
+
+**Source of truth:** `docs/JARVIS-VIDEO-REVERSE-ENGINEERING.md` — the master reverse-engineering and implementation specification for the M12 runtime. This phase implements the runtime on top of the M11 operator view (`Phase 6A`).
+
+**Z.A.R.V.I.S.** = **Zeto Autonomous Runtime Virtual Intelligence System** — the agent/voice/computer-use operator runtime, distinct from the M11 operator view.
+
+### Scope
+
+- Session/event loop with canonical event catalog (spec §10).
+- Operator state machine with guarded transitions — `IDLE → LISTENING → TRANSCRIBING → THINKING → PLANNING → AWAITING_APPROVAL → EXECUTING → VERIFYING → SPEAKING → IDLE`, exceptional `PAUSED / DEGRADED / FAILED / CANCELLED` — including timeout, retry, cancellation and recovery semantics (spec §3.3).
+- Intent router, planner, skill/agent registries, tool gateway, executor, observer/verifier (spec §6).
+- Voice plane: push-to-talk/VAD, streaming STT/TTS, barge-in, latency budgets and fallback matrix (spec §5).
+- Computer-use adapters (Browser/Desktop/File/Shell/Application) behind typed contracts with observe→decide→act→verify loops (spec §7).
+- Command Stream, Sequence Builder, approval drawer, mobile pairing, onboarding (spec §2, §4).
+- Audit, memory boundaries, persistence model, observability/SLOs and recovery/checkpoint model (spec §8, §11–§13).
+
+### Current implementation slice
+
+- [ ] M12 contracts + operator state machine + event stream (spec §3.3, §9, §10).
+- [ ] Command Stream and orb wired to real events.
+- [ ] Sequence Builder persistence and execution.
+- [ ] Skill/tool registries and policy gateway.
+- [ ] Browser automation adapter + verifier.
+- [ ] Desktop/application adapters + verifier.
+- [ ] Voice STT/TTS + push-to-talk + barge-in.
+- [ ] Mobile pairing.
+- [ ] Advanced autonomous mode with bounded budgets and approvals.
+- [ ] Full security/E2E/soak/recovery evidence.
+
+### Non-negotiable invariants (spec §8)
+
+- Deny-by-default tool permissions; approval required for destructive, external side-effect, credential, financial, publication and privilege-changing actions.
+- Observed browser/screen content is **untrusted data** — it can never grant tools or change policy (prompt-injection defense).
+- Every action carries provenance: `session_id`, `plan_id`, `step_id`, `risk`, `approval`, `idempotency_key` and verification evidence.
+- Secrets redacted in UI, logs, screenshots and model context; emergency stop revokes ephemeral grants.
+- No raw audio persistence by default; retention requires explicit policy.
+
+### Exit criteria (mapped to spec §14.1 acceptance matrix)
+
+- All state-machine transitions in spec §3.3 covered by tests; timeout/retry/cancellation/recovery paths green.
+- Permission-bypass and prompt-injection suites green; approval matrix enforced.
+- Voice latency SLOs met in staging; fallback matrix exercised.
+- E2E: voice/text command → plan → approval → tool execution → verification → spoken/UI result passes in staging.
+- Crash mid-plan resumes without duplicate side effects (idempotency proven).
+- 12-hour soak: zero unrecoverable failures and no unbounded memory growth.
+- Audit completeness and QR-token expiry/replay tests green.
 
 ## Phase 7 — M09 Orchestration and AUTO-PILOT
 
