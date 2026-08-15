@@ -4,7 +4,7 @@
 **Source inspected:** uploaded `videoplayback.mp4`, duration ~251.84 seconds, 640×360, 30fps. Brand surface observed: "Brahma AI".
 **Acronym:** Z.A.R.V.I.S. = **Zeto Autonomous Runtime Virtual Intelligence System**.
 
-This document records visible product behavior from the supplied recording and translates it into Zeto requirements. It does not claim hidden implementation details that cannot be observed from the recording. Frame-accurate timestamp evidence is captured in §1.3 as a structured, capture-ready template; per-second entries must be filled from a re-watch of the source recording and must never be fabricated.
+This document records visible product behavior from the supplied recording and translates it into Zeto requirements. It does not claim hidden implementation details that cannot be observed from the recording. §1.3 holds a coarse timeline-evidence pass derived from automated frame extraction + OCR of the source recording: each row separates observed text from inference, and nothing is fabricated.
 
 ---
 
@@ -20,6 +20,8 @@ This document records visible product behavior from the supplied recording and t
 | Resolution    | 640×360 (h264, 30 fps, AAC)                                                                         |
 | Frame rate    | 30 fps                                                                                              |
 | Brand surface | "Brahma AI" (dark desktop app)                                                                      |
+
+> **Reference-media policy:** the source recording is committed at `media/zarvis-ref.mp4` (SHA-256 `9f93ebdd…`). Future reference media should be stored via **Git LFS or artifact/object storage with an immutable SHA-256 manifest** to avoid permanent repo-history growth; replacing or re-encoding the reference requires updating the SHA-256 above and re-running frame extraction + OCR.
 
 ### 1.2 Observed UI / interaction inventory
 
@@ -44,24 +46,28 @@ The recording shows a dark desktop AI operator application with a persistent com
 
 ### 1.3 Timeline evidence
 
-Rows are derived from **automated frame extraction** (10 s grid → 25 frames) + OCR of `media/zarvis-ref.mp4`; each row links observation → requirement so no claim is unverifiable. Text content is OCR-derived and noisy; rows marked Medium/Low require human visual confirmation.
+**Pass type:** coarse evidence pass — 25 frames sampled on a 10-second grid (`ffmpeg` frame extraction) + `tesseract` OCR of `media/zarvis-ref.mp4`. This is **not** a frame-accurate scene map: interactions shorter than ~10 s, transitions, modal opens, clicks, and voice-state changes can be missed.
 
-| Timecode    | Surface                       | Observed behavior (OCR-derived)                                                                                                                | Requirement link         | Confidence |
-| ----------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------- |
-| 00:00–00:10 | Command center                | Orb + branding; telemetry cluster (CPU, RAM, NET ONLINE, CAM OFF); COMMAND STREAM panel visible                                                | §2.2 S1; §2.3            | High       |
-| 00:10–00:50 | Command center                | COMMAND STREAM + SEQUENCE BUILDER headers; telemetry updating (CPU 2–30%, RAM 38–52%, NET ONLINE, CAM OFF); clock 12:22–12:56 PM               | §2.2 S1; §4.2; §4.3      | High       |
-| 00:50–01:30 | Orb / visual                  | No OCR-detectable text — likely orb/chat-mode surface                                                                                          | §2.3                     | Low        |
-| 01:20–01:40 | Command center                | Telemetry: CPU ~50%, NET ONLINE, CAM OFF; 02:11 PM                                                                                             | §2.2                     | Medium     |
-| 01:35–01:45 | Camera preview                | **CAMERA PREVIEW** panel (01:06 PM, CPU ~69%)                                                                                                  | §2.2 S1 (camera preview) | Medium     |
-| 01:40–01:50 | JARVIS CORE                   | Orb surface: **"Ask Jarvis anything in STUDY mode…"**, **JARVIS CORE / WAITING FOR INPUT**                                                     | §2.2 S1; §2.3; §4.1      | Medium     |
-| 01:50–02:10 | Onboarding                    | **"Initialize Brahma AI — Set up your assistant in two quick steps, then launch into your personal AI dashboard"** + Create Account + AI Setup | §2.1 S5; §2.2            | High       |
-| 02:10–02:20 | Transition                    | No OCR-detectable text                                                                                                                         | —                        | Low        |
-| 02:20–02:40 | Command center + computer-use | **(Computer) type**; COMMAND STREAM: _"Brahma AI: I've opened Notepad and typed the HTML code for…"_; CPU ~18%, RAM ~51%                       | §4.2; §7 DesktopTool     | High       |
-| 02:40–02:52 | Command center                | Continuation of Notepad/HTML task in COMMAND STREAM                                                                                            | §4.2                     | Medium     |
+Rows are **independent observations** from the grid frames listed in `Frame(s)` — they are **not** a partition of the timeline. Overlapping windows (e.g., 01:20–01:40, 01:35–01:45, 01:40–01:50) simply mean the same frames informed multiple observations; downstream tooling must not treat them as mutually exclusive segments.
 
-> **Coverage status:** populated from automated extraction (10 s grid) + OCR of the source recording. Sub-10 s detail and Low/Medium-confidence rows require human visual confirmation against the contact sheet (25-frame montage); full frame-accurate review on re-watch remains recommended, but the timeline is no longer an empty scaffold.
+Each row separates **Observed** (visually confirmed from the frame) from **OCR text** (raw extracted text, noisy) from **Inference** (interpretation of the above). Confidence: **High** = OCR text matches a known surface; **Medium** = partial/weak OCR; **Low** = no OCR text, inference only. Medium/Low rows require human visual confirmation against the 25-frame contact sheet before being promoted to evidence.
+
+| Frame(s)   | Timecode    | Surface                       | Observed                                             | OCR text                                                                                                                                 | Inference                                                                  | Requirement link         | Confidence |
+| ---------- | ----------- | ----------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------ | ---------- |
+| f0, f10    | 00:00–00:10 | Command center                | Orb + branding; telemetry cluster visible            | CPU, RAM, NET ONLINE, CAM OFF; COMMAND STREAM                                                                                            | Command-center layout active at start                                      | §2.2 S1; §2.3            | High       |
+| f10–f50    | 00:10–00:50 | Command center                | Command stream + sequence panels; telemetry updating | COMMAND STREAM, SEQUENCE BUILDER; CPU 2–30%, RAM 38–52%, NET ONLINE, CAM OFF; clock 12:22–12:56 PM                                       | Live session with both panels and live telemetry                           | §2.2 S1; §4.2; §4.3      | High       |
+| f50–f90    | 00:50–01:30 | Orb / visual                  | No OCR-detectable text                               | (none)                                                                                                                                   | Likely orb/chat-mode surface — absence of text, not a positive observation | §2.3                     | Low        |
+| f80–f100   | 01:20–01:40 | Command center                | Telemetry cluster visible                            | CPU ~50%, NET ONLINE, CAM OFF; 02:11 PM                                                                                                  | Telemetry continues updating                                               | §2.2                     | Medium     |
+| f90        | 01:35–01:45 | Camera preview                | Dedicated preview panel visible                      | CAMERA PREVIEW; 01:06 PM; CPU ~69%                                                                                                       | Camera preview is a first-class surface                                    | §2.2 S1 (camera preview) | Medium     |
+| f90, f100  | 01:40–01:50 | JARVIS CORE orb               | Orb idle surface visible                             | JARVIS CORE / WAITING FOR INPUT; "Ask Jarvis anything in STUDY mode…"                                                                    | Orb idle surface labelled JARVIS CORE                                      | §2.2 S1; §2.3; §4.1      | Medium     |
+| f110–f130  | 01:50–02:10 | Onboarding                    | First-run setup flow visible                         | "Initialize Brahma AI — Set up your assistant in two quick steps, then launch into your personal AI dashboard"; Create Account; AI Setup | Onboarding wizard for assistant initialization                             | §2.1 S5; §2.2            | High       |
+| f130, f140 | 02:10–02:20 | Transition                    | No OCR-detectable text                               | (none)                                                                                                                                   | Scene transition — not observed positively                                 | —                        | Low        |
+| f140–f160  | 02:20–02:40 | Command center + computer-use | Command stream updating                              | (Computer) type; "Brahma AI: I've opened Notepad and typed the HTML code for…"; CPU ~18%, RAM ~51%                                       | Desktop automation executed and reported in stream                         | §4.2; §7 DesktopTool     | High       |
+| f160–f170  | 02:40–02:52 | Command center                | Command stream continuation                          | Notepad/HTML task continuation text                                                                                                      | Task in progress / completion                                              | §4.2                     | Medium     |
+
+> **Coverage status:** coarse evidence pass only. Sub-10 s detail and all Medium/Low rows require human visual confirmation against the contact sheet (25-frame montage) before promotion to evidence; a frame-accurate scene-by-scene pass on re-watch would upgrade this from coarse to full reconstruction.
 >
-> **Provenance rule:** do not fabricate timecodes or behaviors; every row above is derived from the actual recording via `ffmpeg` frame extraction + `tesseract` OCR.
+> **Provenance rule:** do not fabricate timecodes or behaviors. Every row is derived from the actual recording via `ffmpeg` frame extraction + `tesseract` OCR; rows with no OCR text are marked inference (Low) and must not be treated as positive observations.
 
 ---
 
