@@ -172,29 +172,67 @@ Audit + Memory + Events
 
 ### 3.3 Operator state machine (transition table)
 
-States: `IDLE, LISTENING, TRANSCRIBING, THINKING, PLANNING, AWAITING_APPROVAL, EXECUTING, VERIFYING, SPEAKING, PAUSED, DEGRADED, FAILED, CANCELLED, EMERGENCY_STOPPED`.
+**State groups** — every transition rule references these sets; there are **no bare `any` rules**:
 
-| From              | To                                        | Trigger / Guard                                                                                  | Timeout                 | Retry                   | On failure                                             |
-| ----------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------- | ----------------------- | ------------------------------------------------------ |
-| IDLE              | LISTENING                                 | Push-to-talk start or VAD open; mic permission granted                                           | Listening idle: 15 s    | —                       | → IDLE                                                 |
-| LISTENING         | TRANSCRIBING                              | Speech result available                                                                          | STT first-token: 2 s    | STT retry ×2            | → IDLE (no speech)                                     |
-| TRANSCRIBING      | THINKING                                  | Utterance finalized                                                                              | —                       | —                       | → DEGRADED                                             |
-| THINKING          | PLANNING                                  | Intent resolved                                                                                  | Intent budget: 3 s      | Re-route ×1             | → FAILED                                               |
-| PLANNING          | AWAITING_APPROVAL                         | Policy requires human approval                                                                   | Approval wait: 5 min    | —                       | → CANCELLED on reject/timeout                          |
-| PLANNING          | EXECUTING                                 | Auto-approved within policy (allowlisted, low risk)                                              | —                       | —                       | → FAILED                                               |
-| AWAITING_APPROVAL | EXECUTING                                 | Operator approves / policy override (audited)                                                    | —                       | —                       | → CANCELLED                                            |
-| EXECUTING         | VERIFYING                                 | Tool step completes                                                                              | Step timeout (per tool) | Backoff 1 s→30 s, max 3 | → FAILED (non-retryable)                               |
-| VERIFYING         | EXECUTING                                 | Postcondition unmet, retry budget left                                                           | Verify timeout: 10 s    | ≤ max attempts          | → FAILED                                               |
-| VERIFYING         | SPEAKING                                  | All steps verified                                                                               | —                       | —                       | → DEGRADED                                             |
-| SPEAKING          | IDLE                                      | TTS completes                                                                                    | TTS max: 30 s           | —                       | → IDLE                                                 |
-| any               | PAUSED                                    | Operator pause (resumable, non-critical)                                                         | —                       | —                       | —                                                      |
-| any               | EMERGENCY_STOPPED                         | Emergency stop / kill switch: immediately revoke all ephemeral grants and cancel in-flight tools | —                       | —                       | terminal; requires explicit restart + re-authorization |
-| PAUSED            | EXECUTING / VERIFYING / AWAITING_APPROVAL | Resume from checkpoint restores the prior resumable state; grants re-issued only on approval     | —                       | —                       | → EMERGENCY_STOPPED if re-authorization fails          |
-| any               | DEGRADED                                  | Partial/soft failure (e.g., one tool unavailable)                                                | Auto-recover ≤ 30 s     | Probe ×3                | → FAILED                                               |
-| any               | CANCELLED                                 | Operator reject, plan timeout, or kill switch                                                    | Plan timeout: 15 min    | —                       | terminal                                               |
-| any               | FAILED                                    | Hard failure, verification exhausted, or non-retryable error                                     | —                       | —                       | terminal; incident surfaced                            |
+```text
+IDLE
+ACTIVE_STATES   = LISTENING, TRANSCRIBING, THINKING, PLANNING, AWAITING_APPROVAL,
+                  EXECUTING, VERIFYING, SPEAKING, DEGRADED
+RECOVERY_STATES = RECOVERING, REAUTHORIZING
+PAUSED           (interruptible, resumable)
+TERMINAL_STATES = FAILED, CANCELLED, EMERGENCY_STOPPED
+NON_TERMINAL     = IDLE ∪ ACTIVE_STATES ∪ RECOVERY_STATES ∪ {PAUSED}
+```
 
-**Semantics:** every transition is audited (`from, to, trigger, actor, session_id, plan_id, step_id, ts`). Checkpointing at plan-step granularity enables resume from `PAUSED`/crash (§13). `FAILED`/`CANCELLED`/`EMERGENCY_STOPPED` run cleanup: revoke ephemeral grants, cancel in-flight tools, emit terminal event. `EMERGENCY_STOPPED` additionally latches the kill switch and requires explicit restart and re-authorization before the runtime accepts new sessions — it must never be conflated with ordinary `PAUSED` semantics.
+**Determinism rules:**
+
+- `TERMINAL_STATES` have **no outbound transitions**. Leaving a terminal state requires a **new session generation** (`session_id` + `generation`), never a revert to a prior state.
+- `EMERGENCY_STOPPED` is reachable from any `NON_TERMINAL` state but **only** for genuine safety interrupts: emergency stop, global kill switch, safety interlock. Ordinary cancellation, operator rejection, plan timeout and re-authorization failure route to `CANCELLED` — never to `EMERGENCY_STOPPED`.
+- Every transition is audited (`from, to, trigger, actor, session_id, plan_id, step_id, ts`).
+
+| From              | To                                        | Trigger / Guard                                                                                                                        | Timeout                 | Retry                   | On failure                                                    |
+| ----------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------- | ------------------------------------------------------------- |
+| IDLE              | LISTENING                                 | Push-to-talk start or VAD open; mic permission granted                                                                                 | Listening idle: 15 s    | —                       | → IDLE                                                        |
+| LISTENING         | TRANSCRIBING                              | Speech result available                                                                                                                | STT first-token: 2 s    | STT retry ×2            | → IDLE (no speech)                                            |
+| TRANSCRIBING      | THINKING                                  | Utterance finalized                                                                                                                    | —                       | —                       | → DEGRADED                                                    |
+| THINKING          | PLANNING                                  | Intent resolved                                                                                                                        | Intent budget: 3 s      | Re-route ×1             | → FAILED                                                      |
+| PLANNING          | AWAITING_APPROVAL                         | Policy requires human approval                                                                                                         | Approval wait: 5 min    | —                       | → CANCELLED on reject/timeout                                 |
+| PLANNING          | EXECUTING                                 | Auto-approved within policy (allowlisted, low risk)                                                                                    | —                       | —                       | → FAILED                                                      |
+| AWAITING_APPROVAL | EXECUTING                                 | Operator approves / policy override (audited)                                                                                          | —                       | —                       | → CANCELLED                                                   |
+| EXECUTING         | VERIFYING                                 | Tool step completes                                                                                                                    | Step timeout (per tool) | Backoff 1 s→30 s, max 3 | → FAILED (non-retryable)                                      |
+| VERIFYING         | EXECUTING                                 | Postcondition unmet, retry budget left                                                                                                 | Verify timeout: 10 s    | ≤ max attempts          | → FAILED                                                      |
+| VERIFYING         | SPEAKING                                  | All steps verified                                                                                                                     | —                       | —                       | → DEGRADED                                                    |
+| SPEAKING          | IDLE                                      | TTS completes                                                                                                                          | TTS max: 30 s           | —                       | → IDLE                                                        |
+| ACTIVE ∪ RECOVERY | PAUSED                                    | Operator pause (resumable, non-critical)                                                                                               | —                       | —                       | remains PAUSED                                                |
+| PAUSED            | REAUTHORIZING                             | Resume requested; session must re-authenticate                                                                                         | Re-auth: 30 s           | ×2                      | → CANCELLED (denied/expired)                                  |
+| REAUTHORIZING     | RECOVERING                                | Re-authorization granted                                                                                                               | —                       | —                       | → CANCELLED                                                   |
+| RECOVERING        | EXECUTING / VERIFYING / AWAITING_APPROVAL | Checkpoint validated, lease reacquired, context restored — resumes persisted `resume_state`                                            | Recovery: 30 s          | ×3                      | → FAILED (checkpoint invalid)                                 |
+| RECOVERING        | FAILED                                    | Checkpoint corrupt / unrecoverable                                                                                                     | —                       | —                       | terminal                                                      |
+| NON_TERMINAL      | EMERGENCY_STOPPED                         | Emergency stop / global kill switch / safety interlock: immediately revoke ephemeral grants, cancel in-flight tools, latch kill switch | —                       | —                       | terminal; restart = new session generation + re-authorization |
+| ACTIVE ∪ RECOVERY | FAILED                                    | Hard failure, verification exhausted, or non-retryable error                                                                           | —                       | —                       | terminal; incident surfaced                                   |
+| ACTIVE ∪ RECOVERY | CANCELLED                                 | Operator reject / ordinary plan cancellation / plan timeout                                                                            | Plan timeout: 15 min    | —                       | terminal                                                      |
+| ACTIVE            | DEGRADED                                  | Partial/soft failure (e.g., one tool unavailable)                                                                                      | Auto-recover ≤ 30 s     | Probe ×3                | → FAILED                                                      |
+| DEGRADED          | (prior ACTIVE state)                      | Recovered                                                                                                                              | —                       | —                       | → FAILED                                                      |
+
+**Checkpoint / resume contract** (persisted per session; the runtime never guesses the resume target):
+
+```json
+{
+  "session_id": "...",
+  "generation": 3,
+  "state": "PAUSED",
+  "resume_state": "VERIFYING",
+  "checkpoint_id": "...",
+  "plan_id": "...",
+  "step_id": "...",
+  "attempt": 2,
+  "grants_revoked": true
+}
+```
+
+Rules: `state: PAUSED` persists `resume_state` from the pre-pause state; `RECOVERING`/`REAUTHORIZING` persist the same contract so a restart resolves the exact resume target; `grants_revoked` gates grant re-issuance (only on approval).
+
+**Semantics:** checkpointing at plan-step granularity enables resume from `PAUSED`/crash (§13). `FAILED`/`CANCELLED`/`EMERGENCY_STOPPED` run cleanup: revoke ephemeral grants, cancel in-flight tools, emit terminal event. `EMERGENCY_STOPPED` additionally latches the kill switch; leaving it requires a **new session generation** with explicit restart and re-authorization. Re-authorization failure is ordinary cancellation (`CANCELLED`), never an emergency.
 
 ---
 
@@ -202,15 +240,17 @@ States: `IDLE, LISTENING, TRANSCRIBING, THINKING, PLANNING, AWAITING_APPROVAL, E
 
 ### 4.1 Command taxonomy
 
-| Category    | Examples                                 | Risk        | Approval required      |
-| ----------- | ---------------------------------------- | ----------- | ---------------------- |
-| Navigation  | "open dashboard", "go to settings"       | None        | No                     |
-| Diagnostics | "run health check", "show telemetry"     | None        | No                     |
-| Content     | "draft a caption for X"                  | Low         | No                     |
-| Publish     | "post to Facebook"                       | High        | Yes (publication)      |
-| Sequence    | "run my morning sequence (dry-run)"      | Medium–High | By policy              |
-| Automation  | browser/desktop control                  | High        | Yes unless allowlisted |
-| System      | pause, emergency stop, credential config | Critical    | Yes (admin)            |
+| Category    | Examples                                                                                           | Risk        | Approval required                               |
+| ----------- | -------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------- |
+| Navigation  | "open dashboard", "go to settings"                                                                 | None        | No                                              |
+| Diagnostics | "run health check", "show telemetry"                                                               | None        | No                                              |
+| Content     | "draft a caption for X"                                                                            | Low         | No                                              |
+| Publish     | "post to Facebook"                                                                                 | High        | Yes (publication)                               |
+| Sequence    | "run my morning sequence (dry-run)"                                                                | Medium–High | By policy                                       |
+| Automation  | browser/desktop control                                                                            | High        | Yes unless allowlisted                          |
+| System      | pause — authenticated operator, immediate                                                          | Low         | No (immediate)                                  |
+| System      | emergency_stop — authenticated/authorized operator, immediate, non-blocking, immutable audit event | Critical    | No approval wait (**authorization ≠ approval**) |
+| System      | credential_change — admin                                                                          | Critical    | Yes (admin)                                     |
 
 ### 4.2 Command stream event
 
@@ -490,10 +530,11 @@ Audit events are append-only; all others are mutable operational state. Retentio
 
 ## 13. Recovery Model
 
-- **Crash:** session state reconstructible from `operator_events`; in-flight steps reconciled via `idempotency_key`; non-terminal plans marked for resume.
+- **Crash:** session state reconstructed from `operator_events` + the persisted checkpoint contract (§3.3); the runtime enters `RECOVERING`, validates the checkpoint, reacquires the lease, and resumes the persisted `resume_state`. Invalid checkpoints route to `FAILED`.
 - **Reconnect:** SSE/WebSocket resume with last `sequence_id`; UI replays command stream from persisted events.
-- **Checkpoint:** plan-step granularity; resume from last verified step; unverified steps re-verify before continuation.
-- **Pause vs emergency stop:** `PAUSED` resumes to the prior resumable state (`EXECUTING`/`VERIFYING`/`AWAITING_APPROVAL`); `EMERGENCY_STOPPED` is terminal and requires explicit restart + re-authorization.
+- **Checkpoint:** plan-step granularity; resume from last verified step; unverified steps re-verify before continuation. The `state`/`resume_state`/`checkpoint_id` contract (§3.3) is persisted — the runtime never guesses the resume target.
+- **Re-authorization:** `PAUSED → REAUTHORIZING`; granted → `RECOVERING` → prior state; denied/expired → `CANCELLED` (ordinary cancellation, not an emergency).
+- **Pause vs emergency stop:** `PAUSED` resumes through `REAUTHORIZING`/`RECOVERING` to the prior resumable state; `EMERGENCY_STOPPED` is terminal — leaving it requires a **new session generation** with explicit restart + re-authorization.
 - **Dead-letter:** steps failing past retry budget land in dead-letter with incident raised; operator may retry, cancel, or quarantine.
 - **Backup/restore:** covered by `scripts/backup.sh` + `scripts/verify-backup.sh`; operator tables included in restore drills.
 
@@ -501,7 +542,7 @@ Audit events are append-only; all others are mutable operational state. Retentio
 
 ## 14. Testing & Release Evidence
 
-- State-machine unit tests (every transition in §3.3).
+- State-machine unit tests (every transition in §3.3), including terminal-state isolation (no outbound transitions) and kill-switch determinism (routes only to `EMERGENCY_STOPPED`).
 - Planner schema/property tests.
 - Tool permission and approval-bypass tests.
 - Prompt-injection tests using malicious browser/page content.
@@ -516,15 +557,15 @@ Audit events are append-only; all others are mutable operational state. Retentio
 
 ### 14.1 Acceptance matrix (measurable)
 
-| Gate          | Exit criterion                                                          |
-| ------------- | ----------------------------------------------------------------------- |
-| State machine | All §3.3 transitions covered by tests; timeout/retry/cancel paths green |
-| Policy        | Bypass attempts blocked (test suite); approval matrix enforced          |
-| Security      | Prompt-injection + secret-leakage suites green; trivy/gitleaks clean    |
-| Voice         | Latency SLOs met in staging; fallback matrix exercised                  |
-| E2E           | Full voice/text → verified action flow passes in staging                |
-| Recovery      | Crash mid-plan resumes without duplicate side effects                   |
-| Soak          | 12 h operator session, zero unrecoverable failures                      |
+| Gate          | Exit criterion                                                                                                                                                          |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| State machine | All §3.3 transitions covered by tests; timeout/retry/cancel paths green; no outbound transitions from `TERMINAL_STATES`; kill switch routes only to `EMERGENCY_STOPPED` |
+| Policy        | Bypass attempts blocked (test suite); approval matrix enforced                                                                                                          |
+| Security      | Prompt-injection + secret-leakage suites green; trivy/gitleaks clean                                                                                                    |
+| Voice         | Latency SLOs met in staging; fallback matrix exercised                                                                                                                  |
+| E2E           | Full voice/text → verified action flow passes in staging                                                                                                                |
+| Recovery      | Crash mid-plan resumes without duplicate side effects                                                                                                                   |
+| Soak          | 12 h operator session, zero unrecoverable failures                                                                                                                      |
 
 ---
 
