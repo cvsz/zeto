@@ -23,7 +23,7 @@ All notable changes follow Keep a Changelog. Zeto uses semantic versioning.
 - SSRF controls, image signature checks, guaranteed temporary-file cleanup, and executable backup/restore verification.
 - Z.A.R.V.I.S. (Zeto Autonomous Runtime Virtual Intelligence System) operator view with live queue/approval/publishing state and the JARVIS reverse-engineering baseline.
 - Master Z.A.R.V.I.S. Operator Runtime specification (`docs/JARVIS-VIDEO-REVERSE-ENGINEERING.md`) with video evidence, state-transition table, command/voice/agent/computer-use contracts, event catalog, persistence model, SLOs and acceptance matrix.
-- Timeline evidence in the M12 spec populated from automated frame extraction + OCR of the source recording (`media/zarvis-ref.mp4`, SHA-256 `9f93ebdd…`), replacing the scaffold-only placeholder.
+- Timeline evidence in the M12 spec populated from automated frame extraction + OCR of the source recording (`media/zarvis-ref.mp4`, SHA-256 `9f93ebdd…`; local-only, git-ignored, not committed), replacing the scaffold-only placeholder.
 - M12 spec state machine hardened per review: `PAUSABLE_STATES` defined (pause only from `AWAITING_APPROVAL / EXECUTING / VERIFYING / DEGRADED` ∪ recovery; voice/planner pause defers or cancels to IDLE), `PAUSED → CANCELLED` for ordinary cancel, persisted `previous_state`/`resume_state` checkpoint contract (DEGRADED recovery target never guessed), timestamp-based evidence sample IDs (`t000`–`t250`) with actual frame numbers, per-row confirmation provenance (`pending_human` → `human_confirmed`), and a reference-media manifest (SHA-256, license/redistribution status).
 - Arin AI assistant: push-to-talk voice companion with dashboard commands, speech recognition, and voice replies.
 

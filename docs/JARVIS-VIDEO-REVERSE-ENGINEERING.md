@@ -15,23 +15,24 @@ This document records visible product behavior from the supplied recording and t
 | Property      | Value                                                                                               |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | Original file | `videoplayback.mp4`                                                                                 |
-| Local ref     | `media/zarvis-ref.mp4` · SHA-256 `9f93ebdda2971c532a2bbde4767dcb71115d5da018c86bfcf594be0f40651398` |
+| Local ref     | `media/zarvis-ref.mp4` · SHA-256 `9f93ebdda2971c532a2bbde4767dcb71115d5da018c86bfcf594be0f40651398` (**local-only** — git-ignored, not committed to the repository) |
 | Duration      | ~251.84 s (verified 251.843628 s via ffprobe)                                                       |
 | Resolution    | 640×360 (h264, 30 fps, AAC)                                                                         |
 | Frame rate    | 30 fps                                                                                              |
 | Brand surface | "Brahma AI" (dark desktop app)                                                                      |
 
-> **Reference-media policy:** the source recording is committed at `media/zarvis-ref.mp4` (SHA-256 `9f93ebdd…`). Future reference media should be stored via **Git LFS or artifact/object storage with an immutable SHA-256 manifest** to avoid permanent repo-history growth; replacing or re-encoding the reference requires updating the SHA-256 above and re-running frame extraction + OCR.
+> **Reference-media policy:** the source recording is **local-only** — kept at `media/zarvis-ref.mp4` (SHA-256 `9f93ebdd…`), with `media/` git-ignored so the recording is **never committed to the repository** (it is no longer tracked as of the local-only change; note the blob remains in earlier commit history and can be purged with a history rewrite if desired). Future reference media must likewise stay out of the repo or use **Git LFS / artifact storage with an immutable SHA-256 manifest**; replacing or re-encoding the reference requires updating the SHA-256 above and re-running frame extraction + OCR.
 >
-> **Reference-media manifest** (redistribution provenance — the recording currently sits in a **public repository**, so license/redistribution must be confirmed before release hygiene is complete):
+> **Reference-media manifest** (the recording is not distributed through the repository, so redistribution/license are not-applicable for repo releases):
 >
 > ```yaml
 > id: zarvis-reference-video
 > sha256: 9f93ebdda2971c532a2bbde4767dcb71115d5da018c86bfcf594be0f40651398
 > source_type: user-supplied
 > source_url: internal-upload
-> license_status: unknown # confirm: licensed | permission-granted before public release
-> redistribution_allowed: unknown
+> repository_status: local-only (media/ git-ignored; not committed)
+> license_status: not-applicable (not redistributed via the repository)
+> redistribution_allowed: false
 > added_at: 2026-08-15
 > purpose: reverse-engineering-reference
 > ```
@@ -223,7 +224,17 @@ NON_TERMINAL     = IDLE ∪ ACTIVE_STATES ∪ RECOVERY_STATES ∪ {PAUSED}
 
 - `TERMINAL_STATES` have **no outbound transitions**. Leaving a terminal state requires a **new session generation** (`session_id` + `generation`), never a revert to a prior state.
 - `EMERGENCY_STOPPED` is reachable from any `NON_TERMINAL` state but **only** for genuine safety interrupts: emergency stop, global kill switch, safety interlock. Ordinary cancellation, operator rejection, plan timeout and re-authorization failure route to `CANCELLED` — never to `EMERGENCY_STOPPED`.
-- **Pause is only legal from `PAUSABLE_STATES ∪ RECOVERY_STATES`.** A pause request arriving during a non-pausable state (`LISTENING`, `TRANSCRIBING`, `THINKING`, `PLANNING`, `SPEAKING`) is **deferred until the next pausable state** or **cancels the in-flight voice/planner activity back to `IDLE`** — it never creates a checkpoint in a non-resumable state.
+- **Pause is only legal from `PAUSABLE_STATES ∪ RECOVERY_STATES`.** A pause request arriving during a non-pausable state is handled **deterministically per state** (single fixed behavior — never an implementer's choice between defer and cancel) and **never creates a checkpoint in a non-resumable state**:
+
+| Non-pausable state | Pause request behavior                                                                                                                                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LISTENING`        | Cancel mic capture → `IDLE`. Ephemeral audio discarded; no checkpoint.                                                                                                                                                                                                                            |
+| `TRANSCRIBING`     | Cancel STT → `IDLE`. Partial transcript discarded and never entered as a command; no checkpoint.                                                                                                                                                                                                  |
+| `THINKING`         | **Defer** — applied at the next pausable state (`AWAITING_APPROVAL` or `EXECUTING`). Intent resolution is bounded (3 s), so the pause lands within seconds; no checkpoint is created in `THINKING` itself.                                                                                         |
+| `PLANNING`         | **Defer** — applied at the next pausable state (`AWAITING_APPROVAL` before any execution, or `EXECUTING` at the step boundary). Planning is bounded (≤5 s); no checkpoint is created in `PLANNING` itself.                                                                                         |
+| `SPEAKING`         | Cancel TTS → `IDLE`. Tool actions are never replayed; only the in-flight TTS is stopped.                                                                                                                                                                                                          |
+
+  **Pause entered from `RECOVERY_STATES`** preserves the checkpoint contract unchanged: `previous_state` records the recovery state the session was in (`RECOVERING`/`REAUTHORIZING`), while `resume_state` keeps its **original persisted value** (∈ `PAUSABLE_STATES`) — it is never recomputed from the recovery state. On resume the session re-enters `REAUTHORIZING → RECOVERING → resume_state`; recovery is idempotent (re-validates the same checkpoint, reacquires the lease, restores the same context).
 - `resume_state` is validated to be in `PAUSABLE_STATES` at recovery time; an invalid target routes to `FAILED` (checkpoint corrupt).
 - Every transition is audited (`from, to, trigger, actor, session_id, plan_id, step_id, ts`).
 
@@ -240,7 +251,7 @@ NON_TERMINAL     = IDLE ∪ ACTIVE_STATES ∪ RECOVERY_STATES ∪ {PAUSED}
 | VERIFYING                  | EXECUTING                                                                                          | Postcondition unmet, retry budget left                                                                                                                                           | Verify timeout: 10 s    | ≤ max attempts          | → FAILED                                                      |
 | VERIFYING                  | SPEAKING                                                                                           | All steps verified                                                                                                                                                               | —                       | —                       | → DEGRADED                                                    |
 | SPEAKING                   | IDLE                                                                                               | TTS completes                                                                                                                                                                    | TTS max: 30 s           | —                       | → IDLE                                                        |
-| PAUSABLE_STATES ∪ RECOVERY | PAUSED                                                                                             | Operator pause (resumable, non-critical); pause during LISTENING/TRANSCRIBING/THINKING/PLANNING/SPEAKING is deferred or cancels to IDLE — no checkpoint in a non-resumable state | —                       | —                       | remains PAUSED                                                |
+| PAUSABLE_STATES ∪ RECOVERY | PAUSED                                                                                             | Operator pause (resumable, non-critical); pause during non-pausable states follows the deterministic per-state policy above — no checkpoint in a non-resumable state; pause from RECOVERY_STATES preserves the original `resume_state` | —                       | —                       | remains PAUSED                                                |
 | PAUSED                     | REAUTHORIZING                                                                                      | Resume requested; session must re-authenticate                                                                                                                                   | Re-auth: 30 s           | ×2                      | → CANCELLED (denied/expired)                                  |
 | PAUSED                     | CANCELLED                                                                                          | Operator cancel / session timeout / explicit abandon (ordinary, non-emergency)                                                                                                   | Session timeout: 24 h   | —                       | terminal                                                      |
 | REAUTHORIZING              | RECOVERING                                                                                         | Re-authorization granted                                                                                                                                                         | —                       | —                       | → CANCELLED                                                   |
@@ -495,7 +506,7 @@ Transport: SSE/WebSocket for transcript, command-stream, plan-step, telemetry an
 | Endpoint                             | Method   | Request                               | Response / events                              |
 | ------------------------------------ | -------- | ------------------------------------- | ---------------------------------------------- |
 | `/v1/operator/sessions`              | POST     | `{ mode, capabilities }`              | `{ session_id, pairing_token? }`               |
-| `/v1/operator/sessions/:id/events`   | SSE      | —                                     | `event` stream (catalog §10)                   |
+| `/v1/operator/sessions/:id/events`   | SSE      | `Last-Event-ID` (last `sequence_id`; 0 = from start) | `event` stream (catalog §10), resumable: server replays persisted events with `sequence_id` > `Last-Event-ID` in order |
 | `/v1/operator/sessions/:id/commands` | POST     | `{ text?, audio_ref?, sequence_id? }` | `{ command_id, plan_id }`                      |
 | `/v1/operator/sessions/:id/cancel`   | POST     | `{ reason }`                          | `{ status: "cancelling" }`                     |
 | `/v1/operator/plans/:id`             | GET      | —                                     | plan object (§6.2)                             |
@@ -513,20 +524,39 @@ Transport: SSE/WebSocket for transcript, command-stream, plan-step, telemetry an
 
 ## 10. Event Catalog (canonical)
 
-| Event                                              | Actor          | Payload (key)                  | Consumers                 |
-| -------------------------------------------------- | -------------- | ------------------------------ | ------------------------- |
-| `session.started` / `session.ended`                | system         | session_id, mode               | audit, telemetry          |
-| `input.received`                                   | operator       | type (text/voice/sequence)     | transcript, orb           |
-| `transcript.partial` / `transcript.final`          | STT            | text, confidence               | transcript, orb           |
-| `intent.resolved`                                  | router         | intent, confidence             | planner, audit            |
-| `plan.created` / `plan.approved` / `plan.rejected` | planner/policy | plan_id, verdict               | UI, audit                 |
-| `step.started` / `step.finished` / `step.failed`   | executor       | plan_id, step_id, tool, result | command stream, telemetry |
-| `tool.require_approval`                            | policy         | step_id, risk                  | approval drawer           |
-| `verification.passed` / `verification.failed`      | verifier       | step_id, evidence              | command stream            |
-| `speech.started` / `speech.ended`                  | TTS            | text                           | orb, transcript           |
-| `pairing.issued` / `pairing.consumed`              | system         | token_id                       | pairing UI                |
-| `incident.raised` / `incident.resolved`            | monitor        | level, scope                   | incident overlay, SLOs    |
-| `emergency.stop`                                   | operator       | reason                         | all subscribers           |
+**Event envelope (mandatory):** every catalog event is emitted inside this envelope, and every persisted `operator_events` row stores the envelope fields. `sequence_id` is a **monotonically increasing integer unique per `(session_id, generation)`** — the ordering contract for deterministic SSE/WebSocket resume (`Last-Event-ID`, §9/§13). `event_id` is globally unique; `correlation_id` ties the event to its originating command (reused across all events of one command). Timestamps alone are **not** an ordering contract; consumers must order by `sequence_id`.
+
+```json
+{
+  "event_id": "evt_...",
+  "session_id": "...",
+  "generation": 3,
+  "sequence_id": 1842,
+  "type": "step.finished",
+  "occurred_at": "ISO-8601",
+  "correlation_id": "..."
+}
+```
+
+| Event                                              | Actor          | Payload (key)                                            | Consumers                    |
+| -------------------------------------------------- | -------------- | -------------------------------------------------------- | ---------------------------- |
+| `session.started` / `session.ended`                | system         | mode                                                      | audit, telemetry             |
+| `session.state_changed`                            | system         | from, to, trigger, actor                                  | audit, orb, SLOs             |
+| `input.received`                                   | operator       | type (text/voice/sequence)                                | transcript, orb              |
+| `transcript.partial` / `transcript.final`          | STT            | text, confidence                                          | transcript, orb              |
+| `intent.resolved`                                  | router         | intent, confidence                                        | planner, audit               |
+| `plan.created` / `plan.approved` / `plan.rejected` | planner/policy | plan_id, verdict                                          | UI, audit                    |
+| `step.started` / `step.finished` / `step.failed`   | executor       | plan_id, step_id, tool, result                            | command stream, telemetry    |
+| `tool.require_approval`                            | policy         | step_id, risk                                             | approval drawer              |
+| `verification.passed` / `verification.failed`      | verifier       | step_id, evidence                                         | command stream               |
+| `speech.started` / `speech.ended`                  | TTS            | text                                                      | orb, transcript              |
+| `pairing.issued` / `pairing.consumed`              | system         | token_id                                                  | pairing UI                   |
+| `incident.raised` / `incident.resolved`            | monitor        | level, scope                                              | incident overlay, SLOs       |
+| `emergency.stop`                                   | operator       | actor_id, reason, source, active_plan_id, active_step_id, grants_revoked_count, tools_cancelled_count, kill_switch_latched | all subscribers, incident    |
+
+**`session.state_changed`** is emitted for **every** §3.3 transition — this is the state machine's audit contract (`from, to, trigger, actor` in the payload; `session_id`/`generation`/`occurred_at` in the envelope; `plan_id`/`step_id`/`ts` carried via `correlation_id` where applicable). Audit completeness tests must assert one such event per transition.
+
+**`emergency.stop`** is a safety-critical incident record: in addition to the envelope it carries a **self-contained** payload (above) so it can be replayed independently of session state — including how many ephemeral grants were revoked and how many tools were cancelled, and whether the kill switch latched. It is append-only and immutable.
 
 ---
 
@@ -538,8 +568,8 @@ Entities: `operator_commands, operator_events, operator_plans, operator_plan_ste
 | --------------------------------------------------- | ------------------------------- | -------------------------- | ------------------------------ |
 | `operator_plans`                                    | 1:N `operator_plan_steps`       | `session_id, created_at`   | 90 d                           |
 | `operator_plan_steps`                               | N:1 plan; 1:N `tool_executions` | `plan_id, (status)`        | 90 d                           |
-| `operator_events`                                   | N:1 session                     | `session_id, ts, (type)`   | 180 d (audit immutable)        |
-| `tool_executions`                                   | N:1 step                        | `(idempotency_key)` unique | 90 d                           |
+| `operator_events`                                   | N:1 session                     | `(session_id, generation, sequence_id)` **unique**; `(session_id, ts, type)` | 180 d (audit immutable)        |
+| `tool_executions`                                   | N:1 step                        | `(session_id, generation, idempotency_key)` **unique** | 90 d                           |
 | `verification_evidence`                             | 1:1 step/execution              | `step_id`                  | 90 d                           |
 | `pairing_tokens`                                    | 1:1 session                     | `(token_hash)` unique      | TTL 5 min                      |
 | `voice_sessions`                                    | 1:1 session                     | `session_id`               | 24 h (no raw audio by default) |
@@ -547,30 +577,45 @@ Entities: `operator_commands, operator_events, operator_plans, operator_plan_ste
 
 Audit events are append-only; all others are mutable operational state. Retention is configurable per deployment.
 
+**Idempotency-key scope (frozen):** `idempotency_key` is scoped as `UNIQUE(session_id, generation, idempotency_key)` — a key is generated by the runtime per plan-step execution and must **survive retry/restart** (replaying the same step within the same session/generation returns the stored result), but is **not global across tenants or sessions**. Two sessions using the same key string (e.g. `publish-step-1`) never collide because the scope includes `session_id` + `generation`. Keys are never derived from user input alone (that would be a replay vector); the runtime prefixes with a per-step nonce. `sequence_id` ordering (same constraint shape as events) is guaranteed by `UNIQUE(session_id, generation, sequence_id)` on `operator_events`.
+
 ---
 
 ## 12. Observability & SLOs
 
-**Metrics:** operator sessions, commands/sec, intent-resolution rate, plan completion rate, tool success/failure/retry counts, approval latency, voice latency, cost/run, pairing success, incident count.
+**Metrics:** operator sessions, commands/sec, intent-resolution rate, plan completion rate, tool success/failure/retry counts, approval request delivery latency, approval UI render latency, policy evaluation latency, voice latency, cost/run, pairing success, incident count.
 **Traces:** one trace per command: input → intent → plan → step → tool → verify → response, with `session_id`/`plan_id`/`step_id` as span attributes.
 **SLOs (target):**
 
-| SLO                             | Target     |
-| ------------------------------- | ---------- |
-| Command → plan start (text)     | ≤ 2 s P95  |
-| Voice first-token               | ≤ 2 s P95  |
-| Tool success rate (allowlisted) | ≥ 99%      |
-| Plan completion (no incident)   | ≥ 98%      |
-| Approval decision latency       | ≤ 30 s P95 |
-| Operator surface availability   | ≥ 99.9%    |
-| Secret leakage incidents        | 0          |
+| SLO                                | Target      |
+| ---------------------------------- | ----------- |
+| Command → plan start (text)        | ≤ 2 s P95   |
+| Voice first-token                  | ≤ 2 s P95   |
+| Tool success rate (allowlisted)    | ≥ 99%       |
+| Plan completion (no incident)      | ≥ 98%       |
+| Approval request delivery latency  | ≤ 500 ms P95 |
+| Approval UI render latency         | ≤ 1 s P95   |
+| Policy evaluation latency          | ≤ 200 ms P95 |
+| Operator surface availability      | ≥ 99.9%     |
+| Secret leakage incidents           | 0           |
+
+**SLO layering note:** approval SLOs measure the **platform** (request delivery, UI render, policy evaluation). The **human approval decision time** (how long the operator takes to click approve) is a **business metric** — reported for insight, never an infrastructure SLO; a slow operator is not an SLO violation.
 
 ---
 
 ## 13. Recovery Model
 
-- **Crash:** session state reconstructed from `operator_events` + the persisted checkpoint contract (§3.3); the runtime enters `RECOVERING`, validates the checkpoint, reacquires the lease, and resumes the persisted `resume_state`. Invalid checkpoints route to `FAILED`.
-- **Reconnect:** SSE/WebSocket resume with last `sequence_id`; UI replays command stream from persisted events.
+- **Crash:** session state reconstructed from `operator_events` + the persisted checkpoint contract (§3.3); the runtime enters `RECOVERING`, validates the checkpoint, reacquires the lease, and resumes the persisted `resume_state`. Invalid checkpoints route to `FAILED`. **Checkpoint recovery is only claimed where a durable boundary exists** — crash handling per state is explicit (§3.3 set definitions):
+
+  | State on crash                                    | Restart policy                                                                                                                                                                                                |
+  | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `LISTENING` / `TRANSCRIBING`                      | Discard ephemeral audio + partial transcript → `IDLE`. No checkpoint.                                                                                                                                         |
+  | `THINKING` / `PLANNING`                           | Restore the last durable command from `operator_commands`, then **re-run intent/planner from that durable input** → planning is redone; no partial plan is trusted. No checkpoint.                              |
+  | `SPEAKING`                                        | Tool actions are **never replayed**; session returns to `IDLE`; only TTS may be resumed/restarted. No checkpoint.                                                                                              |
+  | `AWAITING_APPROVAL` / `EXECUTING` / `VERIFYING` / `DEGRADED` | Checkpoint recovery allowed (§3.3 checkpoint contract). Unverified steps re-verify before continuation.                                                                                             |
+  | `RECOVERING` / `REAUTHORIZING`                    | Crash mid-recovery re-runs recovery **idempotently from the same checkpoint** (re-validate, reacquire lease, restore context); the resume target is never recomputed.                                          |
+
+- **Reconnect:** SSE/WebSocket resume with last `sequence_id` via the `Last-Event-ID` header (or equivalent WS resume field); the server replays persisted `operator_events` with `sequence_id > last` **in order** (see the canonical event envelope, §10), so a reconnected client reconstructs the command stream without gaps or duplicates.
 - **Checkpoint:** plan-step granularity; resume from last verified step; unverified steps re-verify before continuation. The `state`/`resume_state`/`checkpoint_id` contract (§3.3) is persisted — the runtime never guesses the resume target.
 - **Re-authorization:** `PAUSED → REAUTHORIZING`; granted → `RECOVERING` → prior state; denied/expired → `CANCELLED` (ordinary cancellation, not an emergency).
 - **Pause vs emergency stop:** `PAUSED` resumes through `REAUTHORIZING`/`RECOVERING` to the prior resumable state; `EMERGENCY_STOPPED` is terminal — leaving it requires a **new session generation** with explicit restart + re-authorization.
@@ -596,15 +641,17 @@ Audit events are append-only; all others are mutable operational state. Retentio
 
 ### 14.1 Acceptance matrix (measurable)
 
-| Gate          | Exit criterion                                                                                                                                                          |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| State machine | All §3.3 transitions covered by tests; timeout/retry/cancel paths green; no outbound transitions from `TERMINAL_STATES`; kill switch routes only to `EMERGENCY_STOPPED` |
-| Policy        | Bypass attempts blocked (test suite); approval matrix enforced                                                                                                          |
-| Security      | Prompt-injection + secret-leakage suites green; trivy/gitleaks clean                                                                                                    |
-| Voice         | Latency SLOs met in staging; fallback matrix exercised                                                                                                                  |
-| E2E           | Full voice/text → verified action flow passes in staging                                                                                                                |
-| Recovery      | Crash mid-plan resumes without duplicate side effects                                                                                                                   |
-| Soak          | 12 h operator session, zero unrecoverable failures                                                                                                                      |
+| Gate              | Exit criterion                                                                                                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| State machine     | All §3.3 transitions covered by tests; timeout/retry/cancel paths green; no outbound transitions from `TERMINAL_STATES`; kill switch routes only to `EMERGENCY_STOPPED` |
+| Policy            | Bypass attempts blocked (test suite); approval matrix enforced                                                                                                          |
+| Security          | Prompt-injection + secret-leakage suites green; trivy/gitleaks clean                                                                                                    |
+| Voice             | Latency SLOs met in staging; fallback matrix exercised                                                                                                                  |
+| E2E               | Full voice/text → verified action flow passes in staging                                                                                                                |
+| Recovery          | Crash mid-plan resumes without duplicate side effects; crash in each non-checkpointable state (§13) restarts per the durability-boundary policy                            |
+| Soak              | 12 h operator session, zero unrecoverable failures                                                                                                                      |
+| Event stream      | Every §3.3 transition emits `session.state_changed`; envelope `sequence_id` monotonic per `(session_id, generation)`; SSE resume via `Last-Event-ID` replays without gaps or duplicates |
+| Media provenance  | Reference media redistributed only if `redistribution_allowed == true`, **or** excluded from public/release artifacts (current status: `media/` git-ignored + SHA-256 manifest present, so repo releases carry no media) |
 
 ---
 
@@ -625,4 +672,4 @@ Audit events are append-only; all others are mutable operational state. Retentio
 
 ## 16. Definition of Done
 
-M12 is complete only when the visual operator is backed by real state, all tool execution passes through policy/approval, failures are visible and recoverable, actions are auditable and verifiable, tests cover permission bypass/prompt injection/cancellation/replay, and the full voice/text-to-action workflow passes the §14.1 acceptance matrix and staging release gates.
+M12 is complete only when the visual operator is backed by real state, all tool execution passes through policy/approval, failures are visible and recoverable, every state transition is emitted as an ordered `session.state_changed` event resumable over SSE without gaps or duplicates, actions are auditable and verifiable, tests cover permission bypass/prompt injection/cancellation/replay, the full voice/text-to-action workflow passes the §14.1 acceptance matrix and staging release gates, and the **media-provenance release gate** passes (reference media not redistributed without confirmed license, or excluded from release artifacts — `media/` is git-ignored today).

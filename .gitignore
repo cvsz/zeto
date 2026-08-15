@@ -5,3 +5,5 @@ data/
 build/
 dist/
 .DS_Store
+media/
+.playwright-cli/
