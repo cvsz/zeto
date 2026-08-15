@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const canvas = document.getElementById("zarius-canvas");
+  const canvas = document.getElementById("zarvis-canvas");
   const ctx = canvas.getContext("2d", { alpha: false });
   let points = [];
   let state = null;
@@ -192,7 +192,7 @@
     }
 
     try {
-      const response = await fetch("/v1/zarius/state", {
+      const response = await fetch("/v1/zarvis/state", {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });

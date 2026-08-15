@@ -16,7 +16,7 @@ const {
   collectOperationalMetrics,
 } = require("./observability/metrics");
 const { readSecret } = require("./security/secrets");
-const { buildZariusState } = require("./zariusView");
+const { buildZarvisState } = require("./zarvisView");
 
 dotenv.config();
 
@@ -572,17 +572,17 @@ if (databasePool) {
   );
 }
 
-// ── Z.A.R.I.U.S. operator view ─────────────────────────────────────────────────
-app.get("/zarius", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/zarius.html"));
+// ── Z.A.R.V.I.S. operator view ────────────────────────────────────────────────
+app.get("/zarvis", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/zarvis.html"));
 });
 
 app.get(
-  "/api/zarius/state",
+  "/api/zarvis/state",
   requireRole(["admin", "editor", "viewer"]),
   async (req, res, next) => {
     try {
-      const data = await buildZariusState({ db, scheduler });
+      const data = await buildZarvisState({ db, scheduler });
       return res.status(200).json({ ok: true, data });
     } catch (error) {
       return next(error);
@@ -591,11 +591,11 @@ app.get(
 );
 
 app.get(
-  "/v1/zarius/state",
+  "/v1/zarvis/state",
   requireRole(["admin", "editor", "viewer"]),
   async (req, res, next) => {
     try {
-      const data = await buildZariusState({ db, scheduler });
+      const data = await buildZarvisState({ db, scheduler });
       return res.status(200).json({ ok: true, data });
     } catch (error) {
       return next(error);

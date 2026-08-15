@@ -21,7 +21,7 @@ All notable changes follow Keep a Changelog. Zeto uses semantic versioning.
 - Persisted daily analytics, prior-period KPI reports, mention classification, sentiment, and complaint escalation SLAs.
 - Protected Prometheus metrics for HTTP, jobs, publications, approvals, provider failures, and generation cost.
 - SSRF controls, image signature checks, guaranteed temporary-file cleanup, and executable backup/restore verification.
-- Z.A.R.I.U.S. (Zeto Autonomous Runtime Intelligence & Unified System) operator view with live queue/approval/publishing state and the JARVIS reverse-engineering baseline.
+- Z.A.R.V.I.S. (Zeto Autonomous Runtime Virtual Intelligence System) operator view with live queue/approval/publishing state and the JARVIS reverse-engineering baseline.
 - Arin AI assistant: push-to-talk voice companion with dashboard commands, speech recognition, and voice replies.
 
 ### Changed

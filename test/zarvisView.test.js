@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildZariusState } = require("../src/zariusView");
+const { buildZarvisState } = require("../src/zarvisView");
 
 // Mirrors the PostgreSQL-backed facade contract: every data access is async.
 function fakeDb() {
@@ -24,8 +24,8 @@ function fakeDb() {
   };
 }
 
-test("buildZariusState derives live operator telemetry", async () => {
-  const state = await buildZariusState({
+test("buildZarvisState derives live operator telemetry", async () => {
+  const state = await buildZarvisState({
     db: fakeDb(),
     scheduler: { getStatus: () => ({ running: true }) },
     now: new Date("2026-08-15T00:00:00.000Z"),
@@ -33,7 +33,7 @@ test("buildZariusState derives live operator telemetry", async () => {
   });
 
   assert.equal(state.identity.product, "Zeto");
-  assert.equal(state.identity.view, "zarius");
+  assert.equal(state.identity.view, "zarvis");
   assert.equal(state.identity.mode, "AUTO-PILOT");
   assert.equal(state.factory.queued, 2);
   assert.equal(state.factory.awaitingApproval, 1);

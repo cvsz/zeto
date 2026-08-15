@@ -4,7 +4,7 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-async function buildZariusState({
+async function buildZarvisState({
   db,
   scheduler,
   now = new Date(),
@@ -48,7 +48,7 @@ async function buildZariusState({
     generatedAt: now.toISOString(),
     identity: {
       product: "Zeto",
-      view: "zarius",
+      view: "zarvis",
       mode: autopilotEnabled ? "AUTO-PILOT" : "OPERATOR",
       state: alertLevel === "critical" ? "DEGRADED" : "ONLINE",
     },
@@ -116,4 +116,4 @@ async function buildZariusState({
   };
 }
 
-module.exports = { buildZariusState };
+module.exports = { buildZarvisState };
