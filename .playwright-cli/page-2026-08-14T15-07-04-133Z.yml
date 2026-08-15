@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e9]:
+          - generic [ref=e10]: Zeto
+          - generic [ref=e11]: v2.0.0-alpha.1
+        - button "Close sidebar" [ref=e12] [cursor=pointer]
+      - generic [ref=e16]:
+        - generic [ref=e17]: Active Page Context
+        - combobox "Active Page Context" [ref=e18] [cursor=pointer]:
+          - option "🌐 Primary Page (Default)" [selected]
+      - navigation [ref=e19]:
+        - link "Overview" [ref=e20] [cursor=pointer]:
+          - /url: "#dashboard"
+        - link "Analytics NEW" [ref=e26] [cursor=pointer]:
+          - /url: "#analytics"
+          - text: Analytics
+          - generic [ref=e28]: NEW
+        - link "Control Room" [ref=e29] [cursor=pointer]:
+          - /url: "#control-room"
+        - link "Compose" [ref=e31] [cursor=pointer]:
+          - /url: "#compose"
+        - link "Queue" [ref=e35] [cursor=pointer]:
+          - /url: "#queue"
+        - link "Scheduler" [ref=e37] [cursor=pointer]:
+          - /url: "#scheduler"
+        - link "AI Generator AI" [ref=e41] [cursor=pointer]:
+          - /url: "#ai"
+          - text: AI Generator
+          - generic [ref=e44]: AI
+        - link "Page Feed" [ref=e45] [cursor=pointer]:
+          - /url: "#feed"
+        - link "History" [ref=e48] [cursor=pointer]:
+          - /url: "#history"
+        - link "Settings" [ref=e53] [cursor=pointer]:
+          - /url: "#settings"
+      - generic [ref=e57]:
+        - generic [ref=e58]: Online
+        - button "Logout" [ref=e61] [cursor=pointer]
+    - main [ref=e65]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - heading "Overview" [level=1] [ref=e69]
+            - paragraph [ref=e70]: Monitor and automate your Facebook page posting.
+          - button "Refresh" [ref=e71] [cursor=pointer]
+        - generic [ref=e76]:
+          - generic [ref=e84]:
+            - generic [ref=e85]: Page Followers
+            - generic [ref=e86]: "--"
+          - generic [ref=e91]:
+            - generic [ref=e92]: Posts Today
+            - generic [ref=e93]: "--"
+          - generic [ref=e97]:
+            - generic [ref=e98]: Queue Size
+            - generic [ref=e99]: "--"
+          - generic [ref=e105]:
+            - generic [ref=e106]: Active Schedules
+            - generic [ref=e107]: "--"
+        - generic [ref=e108]:
+          - generic [ref=e110]:
+            - generic [ref=e111]: Page Connection
+            - generic [ref=e112]: Checking...
+          - generic [ref=e116]:
+            - generic [ref=e117]: Quick Post
+            - generic [ref=e119]:
+              - textbox "What's on your mind?" [ref=e121]
+              - generic [ref=e122]:
+                - button "Add to Queue" [ref=e123] [cursor=pointer]
+                - button "Publish Now" [ref=e125] [cursor=pointer]
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - generic [ref=e131]: ⏳ Pending AI Approvals
+              - button "⟳ Refresh" [ref=e132] [cursor=pointer]
+            - generic [ref=e133]: Loading pending reviews...
+          - generic [ref=e135]:
+            - generic [ref=e136]:
+              - generic [ref=e137]: Recent History
+              - link "View all →" [ref=e138] [cursor=pointer]:
+                - /url: "#history"
+            - generic [ref=e139]: No activity yet.
+      - text: 💡 💡 💡 💡
+  - generic:
+    - generic [ref=e154]: Welcome back, admin!
+    - generic [ref=e159]: Logged in as Administrator 🛡️

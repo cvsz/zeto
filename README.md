@@ -1,6 +1,7 @@
 # zeto — AI Content Factory & Publishing Automation
 
 ## Language and Coding Standards
+
 - **Communication**: Always talk in Thai when interacting with users.
 - **Code & Technical Assets**: All code, comments, documentation, and technical definitions must be in English.
 
@@ -38,52 +39,56 @@ npm run dev   # starts on http://localhost:5000
 
 ## Configuration
 
-| Variable | Required | Description |
-|---|---|---|
-| `FACEBOOK_PAGE_ID` | ✅ | Facebook Page numeric ID |
-| `FACEBOOK_ACCESS_TOKEN` | ✅ | Long-lived Page Access Token |
-| `FB_API_VERSION` | Optional | Graph API version |
-| `PORT` | Optional | Server port (default: 5000) |
-| `NODE_ENV` | Optional | `development` or `production` |
+| Variable                | Required | Description                   |
+| ----------------------- | -------- | ----------------------------- |
+| `FACEBOOK_PAGE_ID`      | ✅       | Facebook Page numeric ID      |
+| `FACEBOOK_ACCESS_TOKEN` | ✅       | Long-lived Page Access Token  |
+| `FB_API_VERSION`        | Optional | Graph API version             |
+| `PORT`                  | Optional | Server port (default: 5000)   |
+| `NODE_ENV`              | Optional | `development` or `production` |
 
 ## API Endpoints
 
 ### Facebook
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/facebook/post-message` | Publish text post |
-| POST | `/api/facebook/post-photo` | Publish photo (URL or file upload) |
-| GET | `/api/facebook/posts` | Get recent posts |
-| DELETE | `/api/facebook/posts/:postId` | Delete a post |
-| GET | `/api/facebook/insights` | Page stats |
-| GET | `/api/facebook/config` | Connection status |
+
+| Method | Path                          | Description                        |
+| ------ | ----------------------------- | ---------------------------------- |
+| POST   | `/api/facebook/post-message`  | Publish text post                  |
+| POST   | `/api/facebook/post-photo`    | Publish photo (URL or file upload) |
+| GET    | `/api/facebook/posts`         | Get recent posts                   |
+| DELETE | `/api/facebook/posts/:postId` | Delete a post                      |
+| GET    | `/api/facebook/insights`      | Page stats                         |
+| GET    | `/api/facebook/config`        | Connection status                  |
 
 ### Queue
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/queue` | List all queue items |
-| POST | `/api/queue` | Add item to queue |
-| DELETE | `/api/queue` | Clear entire queue |
-| DELETE | `/api/queue/:id` | Remove specific item |
-| POST | `/api/queue/:id/publish` | Immediately publish item |
+
+| Method | Path                     | Description              |
+| ------ | ------------------------ | ------------------------ |
+| GET    | `/api/queue`             | List all queue items     |
+| POST   | `/api/queue`             | Add item to queue        |
+| DELETE | `/api/queue`             | Clear entire queue       |
+| DELETE | `/api/queue/:id`         | Remove specific item     |
+| POST   | `/api/queue/:id/publish` | Immediately publish item |
 
 ### Scheduler
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/schedules` | List custom schedules |
-| POST | `/api/schedules` | Add custom schedule |
-| PATCH | `/api/schedules/:id` | Update schedule |
-| DELETE | `/api/schedules/:id` | Delete schedule |
-| POST | `/api/scheduler/trigger` | Manual trigger |
-| POST | `/api/scheduler/restart` | Restart with new cron |
+
+| Method | Path                     | Description           |
+| ------ | ------------------------ | --------------------- |
+| GET    | `/api/schedules`         | List custom schedules |
+| POST   | `/api/schedules`         | Add custom schedule   |
+| PATCH  | `/api/schedules/:id`     | Update schedule       |
+| DELETE | `/api/schedules/:id`     | Delete schedule       |
+| POST   | `/api/scheduler/trigger` | Manual trigger        |
+| POST   | `/api/scheduler/restart` | Restart with new cron |
 
 ### Other
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/history` | Post history log |
-| GET | `/api/settings` | Get settings |
-| PATCH | `/api/settings` | Update settings |
-| GET | `/health` | Health check |
+
+| Method | Path            | Description      |
+| ------ | --------------- | ---------------- |
+| GET    | `/api/history`  | Post history log |
+| GET    | `/api/settings` | Get settings     |
+| PATCH  | `/api/settings` | Update settings  |
+| GET    | `/health`       | Health check     |
 
 ## Architecture
 
@@ -93,13 +98,14 @@ apps/zeto/
 │   ├── server.js        # Express app, routes, multer
 │   ├── fbController.js  # Facebook Graph API + Queue/Schedule/History handlers
 │   ├── scheduler.js     # node-cron job manager
-│   └── db.js            # Current JSON persistence layer
+│   ├── database/        # PostgreSQL pool and forward migrations
+│   ├── repositories/    # Transactional data-access layer
+│   └── db.js            # PostgreSQL operational-store facade
 ├── public/
 │   ├── index.html       # SPA shell
 │   ├── css/style.css    # Responsive dashboard theme
 │   └── js/app.js        # Router, data loading, page logic
-├── data/
-│   └── db.json          # Current persisted queue/history/schedules/settings
+├── compose.yaml         # Production app and PostgreSQL stack
 ├── .env.example
 ├── exec-planing.md
 └── package.json

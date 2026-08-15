@@ -105,7 +105,11 @@ Migration checklist:
 - [x] README product identity uses Zeto.
 - [x] Execution plan exists.
 - [x] Runtime health service identity uses `zeto` on the implementation branch.
+- [x] Replace remaining UI labels containing `zfbauto` or `FB Auto` when they refer to the product rather than the Facebook adapter.
+- [x] Update clone URLs and documentation links after GitHub rename.
 - [ ] Remove remaining stale product labels in UI/source/storage migration paths.
+- [ ] Update CI/CD repository references, deployment targets, badges, webhooks, GitHub App configuration, and environment integrations.
+- [ ] Preserve redirects from the old GitHub repository URL where GitHub provides them.
 - [ ] Verify branch protection, environments and secrets.
 - [ ] Verify deployment targets and external webhooks.
 
@@ -252,19 +256,19 @@ Canonical `OperatorSnapshot` contract:
 
 ## 7. Module Delivery Matrix
 
-| Module | Capability | Production output | OPS responsibility | Optimization loop |
-|---|---|---|---|---|
-| M01 | Strategy & Ideation | Scored ideas, pillars, hooks | Daily idea standup | Recalibrate scoring |
-| M02 | AI Image | Prompts + variants | Batch generation | Style performance |
-| M03 | AI Video | Reel/avatar/B-roll jobs | Render queue | Retention tuning |
-| M04 | AI Music & Audio | Licensed audio assets | Audio library ops | Watch-time correlation |
-| M05 | Captions/Hooks/Hashtags | Platform copy | Caption packs | Hook/CTA analysis |
-| M06 | Calendar & Auto-Post | Content calendar | Idempotent publisher | Best-time recompute |
-| M07 | Monitoring & Sentiment | Alerts/digests/replies | Social listening | Threshold tuning |
-| M08 | Analytics | Reproducible KPIs | Factory report | Executive review |
-| M09 | Automation & API | Durable workflows | Pipeline health | Cost/latency optimization |
-| M10 | QA / Brand Safety | Score + approval | Approval routing | Policy calibration |
-| M11 | Humanoid Operator | Live system twin/control room | Operator awareness | Attention prioritization |
+| Module | Capability              | Primary production output          | Ops responsibility   | Optimization loop             |
+| ------ | ----------------------- | ---------------------------------- | -------------------- | ----------------------------- |
+| M01    | Strategy & Ideation     | Scored ideas, pillars, hooks       | Daily idea standup   | Recalibrate idea scoring      |
+| M02    | AI Image                | Image prompts + variants           | Batch generation     | Style-token performance       |
+| M03    | AI Video                | Reel/avatar/B-roll specs           | Render queue         | Retention-curve tuning        |
+| M04    | AI Music & Audio        | Jingles, loops, stings, sonic logo | Audio library ops    | Track/watch-time correlation  |
+| M05    | Captions/Hooks/Hashtags | Platform-ready copy                | Daily caption packs  | Hook/CTA analysis             |
+| M06    | Calendar & Auto-Post    | Content calendar                   | Idempotent publisher | Best-time recompute           |
+| M07    | Monitoring & Sentiment  | Alerts/digests/replies             | Social listening     | Threshold tuning              |
+| M08    | Analytics Dashboard     | KPI/dashboard views                | Daily factory report | Weekly executive review       |
+| M09    | Automation & API        | End-to-end workflows               | Pipeline health      | Cost/latency optimization     |
+| M10    | QA/Brand Safety         | 12-point score + approval          | Approval routing     | Calibration of policy weights |
+| M11    | Humanoid Operator       | Live system twin/control room      | Operator awareness   | Attention prioritization      |
 
 # 8. Delivery Phases
 

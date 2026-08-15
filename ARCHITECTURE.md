@@ -1,6 +1,12 @@
 # Zeto Architecture
 
-Zeto is an AI content factory with a versioned API, durable workflow execution, provider abstraction, policy/approval enforcement, multi-platform publishing, monitoring, analytics, and auditable operations.
+## Mission
+
+Zeto is an AI content factory covering ideation, generation, approval, scheduling, publishing, monitoring, and learning. The intended module lifecycle is `PRODUCTION`, `OPS`, and `OPTIMIZE`.
+
+## Current State
+
+The v2 migration starts from a Node.js/Express SPA with a Facebook publishing integration. PostgreSQL migrations, transactional repositories, durable jobs, operational settings/pages/queue/history/sessions, and the initial `/v1/brands` API are implemented. The legacy `/api` HTTP contract remains for client compatibility, but its state is PostgreSQL-backed.
 
 ## Layers
 
@@ -16,7 +22,16 @@ Zeto is an AI content factory with a versioned API, durable workflow execution, 
 
 `IDEATE → GENERATE → WRITE → APPROVE → SCHEDULE → PUBLISH → MONITOR → LEARN`
 
-## Critical invariants
+## Target Boundaries
+
+- `/v1` HTTP API: authentication, authorization, validation, idempotency, and stable response contracts.
+- Domain services: strategy, generation, QA, approval, calendar, monitoring, analytics, and orchestration.
+- PostgreSQL repositories: transactional state and immutable audit records.
+- Durable jobs: retry, timeout, cancellation, ownership, heartbeats, and dead-letter semantics.
+- Provider interfaces: model, object-storage, monitoring, and publishing adapters.
+- Observability: structured logs, metrics, traces, alerts, and cost events.
+
+## Critical Invariants
 
 - Provider secrets stay server-side.
 - Side effects are idempotent.
@@ -25,7 +40,11 @@ Zeto is an AI content factory with a versioned API, durable workflow execution, 
 - Platform-specific behavior lives in adapters.
 - Every generated artifact retains provenance and version information.
 - Analytics must be reproducible from persisted source data.
+- Publishing requires an approved artifact and a transactional claim.
+- `AUTO_PILOT` cannot bypass policy, budget, permission, frequency, or kill-switch controls.
 
-## Migration strategy
+## Migration Strategy
 
 The current JSON-backed Facebook automation remains functional while behavior is moved behind repository and provider contracts. Migration proceeds by vertical slices rather than a big-bang rewrite. PostgreSQL becomes authoritative only after schema/migration tests and restart/idempotency tests pass.
+
+Architectural decisions are recorded under `docs/adr/`.

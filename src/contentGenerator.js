@@ -1,5 +1,5 @@
 /**
- * AI Content Generator for zfbauto
+ * AI Content Generator for Zeto
  * ──────────────────────────────────────────────────────────────────────────────
  * Generates Facebook post content (text + image URL) using multiple AI
  * providers in order of availability:
@@ -14,93 +14,162 @@
  * Content topics: rotates through "learning" topics in Thai/English.
  */
 
-const axios = require('axios');
-const https = require('https');
+const axios = require("axios");
+const https = require("https");
+const { readSecret } = require("./security/secrets");
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 const AI_CONFIG = {
   cloudflare: {
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-    token:     process.env.CLOUDFLARE_WORKERS_TOKEN || process.env.CLOUDFLARE_API_TOKEN,
+    token:
+      readSecret("CLOUDFLARE_WORKERS_TOKEN") ||
+      readSecret("CLOUDFLARE_API_TOKEN"),
     aiGateway: process.env.CLOUDFLARE_AI_GATEWAY_SLUG,
-    textModel: '@cf/meta/llama-3.1-8b-instruct',
-    imgModel:  '@cf/stabilityai/stable-diffusion-xl-base-1.0',
+    textModel: "@cf/meta/llama-3.1-8b-instruct",
+    imgModel: "@cf/stabilityai/stable-diffusion-xl-base-1.0",
   },
   openai: {
-    apiKey:    process.env.OPENAI_API_KEY,
-    textModel: 'gpt-4o-mini',
-    imgModel:  'dall-e-3',
+    apiKey: readSecret("OPENAI_API_KEY"),
+    textModel: "gpt-4o-mini",
+    imgModel: "dall-e-3",
   },
   gemini: {
-    apiKey:  process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY,
-    model:   'gemini-1.5-flash-latest',
+    apiKey: readSecret("GEMINI_API_KEY") || readSecret("GOOGLE_AI_API_KEY"),
+    model: "gemini-1.5-flash-latest",
   },
   unsplash: {
-    accessKey: process.env.UNSPLASH_ACCESS_KEY,
+    accessKey: readSecret("UNSPLASH_ACCESS_KEY"),
   },
 };
 
 // ── "Know-how to learn" topic library ─────────────────────────────────────────
 const TOPIC_LIBRARY = [
   // Tech & Dev
-  { tag: 'coding',        th: 'การเขียนโปรแกรม',         en: 'programming & coding', emoji: '💻' },
-  { tag: 'ai',            th: 'ปัญญาประดิษฐ์',             en: 'Artificial Intelligence & Machine Learning', emoji: '🤖' },
-  { tag: 'webdev',        th: 'Web Development',          en: 'web development', emoji: '🌐' },
-  { tag: 'python',        th: 'Python',                   en: 'Python programming', emoji: '🐍' },
-  { tag: 'database',      th: 'ฐานข้อมูล',                en: 'databases & SQL', emoji: '🗄️' },
-  { tag: 'cloud',         th: 'Cloud Computing',          en: 'cloud computing', emoji: '☁️' },
-  { tag: 'security',      th: 'Cybersecurity',            en: 'cybersecurity', emoji: '🔐' },
+  {
+    tag: "coding",
+    th: "การเขียนโปรแกรม",
+    en: "programming & coding",
+    emoji: "💻",
+  },
+  {
+    tag: "ai",
+    th: "ปัญญาประดิษฐ์",
+    en: "Artificial Intelligence & Machine Learning",
+    emoji: "🤖",
+  },
+  { tag: "webdev", th: "Web Development", en: "web development", emoji: "🌐" },
+  { tag: "python", th: "Python", en: "Python programming", emoji: "🐍" },
+  { tag: "database", th: "ฐานข้อมูล", en: "databases & SQL", emoji: "🗄️" },
+  { tag: "cloud", th: "Cloud Computing", en: "cloud computing", emoji: "☁️" },
+  { tag: "security", th: "Cybersecurity", en: "cybersecurity", emoji: "🔐" },
   // Business & Life
-  { tag: 'productivity',  th: 'Productivity',             en: 'productivity & time management', emoji: '⏱️' },
-  { tag: 'finance',       th: 'การเงิน',                  en: 'personal finance & investing', emoji: '💰' },
-  { tag: 'marketing',     th: 'Digital Marketing',        en: 'digital marketing', emoji: '📈' },
-  { tag: 'leadership',    th: 'ภาวะผู้นำ',                en: 'leadership & management', emoji: '🚀' },
-  { tag: 'startup',       th: 'Startup & Entrepreneurship', en: 'startups and entrepreneurship', emoji: '🏆' },
+  {
+    tag: "productivity",
+    th: "Productivity",
+    en: "productivity & time management",
+    emoji: "⏱️",
+  },
+  {
+    tag: "finance",
+    th: "การเงิน",
+    en: "personal finance & investing",
+    emoji: "💰",
+  },
+  {
+    tag: "marketing",
+    th: "Digital Marketing",
+    en: "digital marketing",
+    emoji: "📈",
+  },
+  {
+    tag: "leadership",
+    th: "ภาวะผู้นำ",
+    en: "leadership & management",
+    emoji: "🚀",
+  },
+  {
+    tag: "startup",
+    th: "Startup & Entrepreneurship",
+    en: "startups and entrepreneurship",
+    emoji: "🏆",
+  },
   // Learning & Growth
-  { tag: 'learning',      th: 'การเรียนรู้',              en: 'how to learn effectively', emoji: '📚' },
-  { tag: 'mindset',       th: 'Growth Mindset',           en: 'growth mindset', emoji: '🧠' },
-  { tag: 'creativity',    th: 'ความคิดสร้างสรรค์',        en: 'creativity & design thinking', emoji: '🎨' },
-  { tag: 'english',       th: 'ภาษาอังกฤษ',              en: 'English language learning', emoji: '🗣️' },
+  {
+    tag: "learning",
+    th: "การเรียนรู้",
+    en: "how to learn effectively",
+    emoji: "📚",
+  },
+  { tag: "mindset", th: "Growth Mindset", en: "growth mindset", emoji: "🧠" },
+  {
+    tag: "creativity",
+    th: "ความคิดสร้างสรรค์",
+    en: "creativity & design thinking",
+    emoji: "🎨",
+  },
+  {
+    tag: "english",
+    th: "ภาษาอังกฤษ",
+    en: "English language learning",
+    emoji: "🗣️",
+  },
   // Trending
-  { tag: 'blockchain',    th: 'Blockchain & Web3',        en: 'blockchain and Web3', emoji: '⛓️' },
-  { tag: 'ux',            th: 'UI/UX Design',             en: 'UI/UX design', emoji: '✨' },
-  { tag: 'data',          th: 'Data Science',             en: 'data science & analytics', emoji: '📊' },
-  { tag: 'automation',    th: 'Automation',               en: 'automation and no-code tools', emoji: '⚙️' },
+  {
+    tag: "blockchain",
+    th: "Blockchain & Web3",
+    en: "blockchain and Web3",
+    emoji: "⛓️",
+  },
+  { tag: "ux", th: "UI/UX Design", en: "UI/UX design", emoji: "✨" },
+  {
+    tag: "data",
+    th: "Data Science",
+    en: "data science & analytics",
+    emoji: "📊",
+  },
+  {
+    tag: "automation",
+    th: "Automation",
+    en: "automation and no-code tools",
+    emoji: "⚙️",
+  },
 ];
 
 // Post format templates
-const POST_FORMATS = ['tips', 'howto', 'fact', 'quote', 'checklist', 'story'];
+const POST_FORMATS = ["tips", "howto", "fact", "quote", "checklist", "story"];
 
 // Unsplash keyword map
 const UNSPLASH_KEYWORDS = {
-  coding: 'coding laptop',
-  ai: 'artificial intelligence technology',
-  webdev: 'web design computer',
-  python: 'python programming code',
-  database: 'server data technology',
-  cloud: 'cloud technology sky',
-  security: 'cybersecurity technology',
-  productivity: 'productivity workspace desk',
-  finance: 'finance money investment',
-  marketing: 'digital marketing analytics',
-  leadership: 'leadership team success',
-  startup: 'startup office team',
-  learning: 'learning books study',
-  mindset: 'mindset motivation success',
-  creativity: 'creativity design art',
-  english: 'language learning books',
-  blockchain: 'blockchain cryptocurrency',
-  ux: 'ux design interface',
-  data: 'data analytics charts',
-  automation: 'automation robot technology',
+  coding: "coding laptop",
+  ai: "artificial intelligence technology",
+  webdev: "web design computer",
+  python: "python programming code",
+  database: "server data technology",
+  cloud: "cloud technology sky",
+  security: "cybersecurity technology",
+  productivity: "productivity workspace desk",
+  finance: "finance money investment",
+  marketing: "digital marketing analytics",
+  leadership: "leadership team success",
+  startup: "startup office team",
+  learning: "learning books study",
+  mindset: "mindset motivation success",
+  creativity: "creativity design art",
+  english: "language learning books",
+  blockchain: "blockchain cryptocurrency",
+  ux: "ux design interface",
+  data: "data analytics charts",
+  automation: "automation robot technology",
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const axiosInst = axios.create({
   timeout: 30000,
-  httpsAgent: process.env.NODE_ENV !== 'production'
-    ? new https.Agent({ rejectUnauthorized: false })
-    : undefined,
+  httpsAgent:
+    process.env.NODE_ENV !== "production"
+      ? new https.Agent({ rejectUnauthorized: false })
+      : undefined,
 });
 
 /** Pick a random item from array */
@@ -109,7 +178,7 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 /** Pick a random topic, weighted to avoid repeats within last N */
 let _recentTopics = [];
 const pickTopic = () => {
-  const available = TOPIC_LIBRARY.filter(t => !_recentTopics.includes(t.tag));
+  const available = TOPIC_LIBRARY.filter((t) => !_recentTopics.includes(t.tag));
   const pool = available.length > 0 ? available : TOPIC_LIBRARY;
   const topic = pick(pool);
   _recentTopics = [..._recentTopics.slice(-4), topic.tag];
@@ -148,50 +217,62 @@ Write only the post content, nothing else.`;
 /** Generate text via Cloudflare Workers AI */
 async function generateTextCloudflare(prompt) {
   const { accountId, token, textModel } = AI_CONFIG.cloudflare;
-  if (!accountId || !token) throw new Error('Cloudflare creds missing');
+  if (!accountId || !token) throw new Error("Cloudflare creds missing");
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${textModel}`;
-  const res = await axiosInst.post(url, {
-    messages: [
-      { role: 'system', content: 'You are a social media content creator.' },
-      { role: 'user', content: prompt },
-    ],
-    max_tokens: 500,
-  }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+  const res = await axiosInst.post(
+    url,
+    {
+      messages: [
+        { role: "system", content: "You are a social media content creator." },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 500,
     },
-  });
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
 
-  const text = res.data?.result?.response || res.data?.result?.[0]?.generated_text;
-  if (!text) throw new Error('No text from Cloudflare AI');
+  const text =
+    res.data?.result?.response || res.data?.result?.[0]?.generated_text;
+  if (!text) throw new Error("No text from Cloudflare AI");
   return text.trim();
 }
 
 /** Generate text via OpenAI */
 async function generateTextOpenAI(prompt) {
   const { apiKey, textModel } = AI_CONFIG.openai;
-  if (!apiKey) throw new Error('OpenAI API key missing');
+  if (!apiKey) throw new Error("OpenAI API key missing");
 
-  const res = await axiosInst.post('https://api.openai.com/v1/chat/completions', {
-    model: textModel,
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 500,
-    temperature: 0.8,
-  }, {
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-  });
+  const res = await axiosInst.post(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      model: textModel,
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 500,
+      temperature: 0.8,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
 
   const text = res.data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error('No text from OpenAI');
+  if (!text) throw new Error("No text from OpenAI");
   return text.trim();
 }
 
 /** Generate text via Gemini */
 async function generateTextGemini(prompt) {
   const { apiKey, model } = AI_CONFIG.gemini;
-  if (!apiKey) throw new Error('Gemini API key missing');
+  if (!apiKey) throw new Error("Gemini API key missing");
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const res = await axiosInst.post(url, {
@@ -200,7 +281,7 @@ async function generateTextGemini(prompt) {
   });
 
   const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('No text from Gemini');
+  if (!text) throw new Error("No text from Gemini");
   return text.trim();
 }
 
@@ -217,7 +298,7 @@ ${topic.th} ไม่ยากเลย ถ้าเริ่มถูกทา�
 
 คุณกำลังเรียน ${topic.th} อยู่ไหม? แชร์ประสบการณ์ได้เลย! 👇
 
-#${topic.tag} #${topic.th.replace(/\s/g, '')} #LearnWithZeaZ #TechThailand`,
+#${topic.tag} #${topic.th.replace(/\s/g, "")} #LearnWithZeaZ #TechThailand`,
 
     howto: () => `🚀 เริ่มต้น ${topic.th} ยังไงดี? มาดูกัน!
 
@@ -232,7 +313,7 @@ ${topic.th} ไม่ยากเลย ถ้าเริ่มถูกทา�
 
 Ready to start ${topic.en}? 💪
 
-#${topic.tag} #HowTo #${topic.th.replace(/\s/g, '')} #ZeaZLearning`,
+#${topic.tag} #HowTo #${topic.th.replace(/\s/g, "")} #ZeaZLearning`,
 
     fact: () => `${topic.emoji} Did you know? น่าสนใจเกี่ยวกับ ${topic.th}!
 
@@ -244,7 +325,7 @@ ${topic.th} เป็นทักษะที่ตลาดต้องกา�
 
 คุณสนใจ ${topic.th} บ้างไหม? Comment มาเลย! 🔥
 
-#${topic.tag} #FunFact #${topic.th.replace(/\s/g, '')} #LearnEveryday`,
+#${topic.tag} #FunFact #${topic.th.replace(/\s/g, "")} #LearnEveryday`,
 
     quote: () => `✨ Quote of the Day — ${topic.th}
 
@@ -254,7 +335,7 @@ ${topic.emoji} ความสำเร็จด้าน ${topic.en} เกิ�
 
 วันนี้คุณได้เรียนรู้อะไรใหม่บ้าง? แชร์กันได้เลย 👇 ${topic.emoji}
 
-#${topic.tag} #DailyQuote #Motivation #${topic.th.replace(/\s/g, '')}`,
+#${topic.tag} #DailyQuote #Motivation #${topic.th.replace(/\s/g, "")}`,
 
     checklist: () => `📋 Checklist: เริ่มต้น ${topic.th} ให้ได้ผล!
 
@@ -269,9 +350,10 @@ ${topic.emoji} Checklist เสร็จแล้ว เริ่มได้เ
 
 คุณผ่าน checklist นี้ไปกี่ข้อแล้ว? แจ้งด้านล่าง! 👇
 
-#${topic.tag} #Checklist #${topic.th.replace(/\s/g, '')} #LearningJourney`,
+#${topic.tag} #Checklist #${topic.th.replace(/\s/g, "")} #LearningJourney`,
 
-    story: () => `${topic.emoji} เรื่องราวจริง: จากมือใหม่สู่มืออาชีพด้าน ${topic.th}
+    story:
+      () => `${topic.emoji} เรื่องราวจริง: จากมือใหม่สู่มืออาชีพด้าน ${topic.th}
 
 "ตอนแรกฉันไม่รู้อะไรเลยเกี่ยวกับ ${topic.en} กลัวมากว่ามันจะยากเกินไป แต่พอเริ่มทีละเล็กทีละน้อย ฝึกทุกวัน ผ่านไป 3 เดือนก็เริ่มทำได้จริงๆ"
 
@@ -279,7 +361,7 @@ ${topic.emoji} Checklist เสร็จแล้ว เริ่มได้เ
 
 คุณมีเรื่องราวการเรียนรู้ ${topic.th} บ้างไหม? เล่าให้ฟังได้เลย! 🙌
 
-#${topic.tag} #SuccessStory #${topic.th.replace(/\s/g, '')} #NeverGiveUp`,
+#${topic.tag} #SuccessStory #${topic.th.replace(/\s/g, "")} #NeverGiveUp`,
   };
 
   const fn = templates[format] || templates.tips;
@@ -296,35 +378,47 @@ async function getUnsplashImage(topic) {
   if (accessKey) {
     // Use authenticated Unsplash API for consistent results
     try {
-      const res = await axiosInst.get('https://api.unsplash.com/photos/random', {
-        params: { query: keyword, orientation: 'landscape', content_filter: 'high' },
-        headers: { Authorization: `Client-ID ${accessKey}` },
-      });
+      const res = await axiosInst.get(
+        "https://api.unsplash.com/photos/random",
+        {
+          params: {
+            query: keyword,
+            orientation: "landscape",
+            content_filter: "high",
+          },
+          headers: { Authorization: `Client-ID ${accessKey}` },
+        },
+      );
       return res.data?.urls?.regular || res.data?.urls?.full;
-    } catch {}
+    } catch {
+      // Continue with the stable fallback image when Unsplash is unavailable.
+    }
   }
 
   // Fallback: use Unsplash URL format (no API key, direct keyword-based search redirection)
-  const q = encodeURIComponent(keyword);
   return `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&q=80&auto=format&fit=crop`; // Safe tech/default fallback image
 }
 
 /** Generate image via Cloudflare AI (returns binary → need to save or convert) */
 async function generateImageCloudflare(prompt) {
   const { accountId, token, imgModel } = AI_CONFIG.cloudflare;
-  if (!accountId || !token) throw new Error('Cloudflare creds missing');
+  if (!accountId || !token) throw new Error("Cloudflare creds missing");
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${imgModel}`;
-  const res = await axiosInst.post(url, { prompt }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+  const res = await axiosInst.post(
+    url,
+    { prompt },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      responseType: "arraybuffer",
     },
-    responseType: 'arraybuffer',
-  });
+  );
 
   // Convert arraybuffer to base64 data URL
-  const b64 = Buffer.from(res.data).toString('base64');
+  const b64 = Buffer.from(res.data).toString("base64");
   return `data:image/png;base64,${b64}`;
 }
 
@@ -344,12 +438,12 @@ async function generateContent(options = {}) {
     tag,
     format: forcedFormat,
     withImage = true,
-    provider = 'auto',
+    provider = "auto",
   } = options;
 
   // Pick topic
   const topic = tag
-    ? (TOPIC_LIBRARY.find(t => t.tag === tag) || pickTopic())
+    ? TOPIC_LIBRARY.find((t) => t.tag === tag) || pickTopic()
     : pickTopic();
 
   const format = forcedFormat || pick(POST_FORMATS);
@@ -357,28 +451,29 @@ async function generateContent(options = {}) {
   const prompt = buildPrompt(topic, format);
 
   let message = null;
-  let usedProvider = 'local';
+  let usedProvider = "local";
   const errors = [];
 
   // ── Text generation pipeline ─────────────────────────────────────────────
-  const providers = provider === 'auto'
-    ? ['cloudflare', 'openai', 'gemini', 'local']
-    : [provider, 'local'];
+  const providers =
+    provider === "auto"
+      ? ["cloudflare", "openai", "gemini", "local"]
+      : [provider, "local"];
 
   for (const p of providers) {
     try {
-      if (p === 'cloudflare') {
+      if (p === "cloudflare") {
         message = await generateTextCloudflare(prompt);
-        usedProvider = 'cloudflare';
-      } else if (p === 'openai') {
+        usedProvider = "cloudflare";
+      } else if (p === "openai") {
         message = await generateTextOpenAI(prompt);
-        usedProvider = 'openai';
-      } else if (p === 'gemini') {
+        usedProvider = "openai";
+      } else if (p === "gemini") {
         message = await generateTextGemini(prompt);
-        usedProvider = 'gemini';
+        usedProvider = "gemini";
       } else {
         message = generateTextLocal(topic, format);
-        usedProvider = 'local';
+        usedProvider = "local";
       }
       break;
     } catch (e) {
@@ -388,7 +483,7 @@ async function generateContent(options = {}) {
 
   if (!message) {
     message = generateTextLocal(topic, format);
-    usedProvider = 'local-fallback';
+    usedProvider = "local-fallback";
   }
 
   // ── Prompt Branding Guardrails & Content Filter ────────────────────────
@@ -397,7 +492,7 @@ async function generateContent(options = {}) {
     /As an AI/i,
     /Here is the post/i,
     /I cannot write/i,
-    /gambling|casino|crypto-scam|spam/i
+    /gambling|casino|crypto-scam|spam/i,
   ];
   let isClean = true;
   for (const pattern of FORBIDDEN_PATTERNS) {
@@ -407,19 +502,24 @@ async function generateContent(options = {}) {
     }
   }
   if (!isClean) {
-    console.warn(`[content-generator] AI response failed branding guardrails. Falling back to local template.`);
+    console.warn(
+      `[content-generator] AI response failed branding guardrails. Falling back to local template.`,
+    );
     message = generateTextLocal(topic, format);
-    usedProvider = 'local-guardrail-fallback';
+    usedProvider = "local-guardrail-fallback";
   }
-  
+
   // Format message - strip markdown code block wraps (common in AI responses)
-  message = message.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '').trim();
+  message = message
+    .replace(/^```[a-z]*\n/i, "")
+    .replace(/\n```$/, "")
+    .trim();
 
   // ── Image pipeline ──────────────────────────────────────────────────────
   let imageUrl = null;
   if (withImage) {
     try {
-      if (provider === 'cloudflare' && AI_CONFIG.cloudflare.accountId) {
+      if (provider === "cloudflare" && AI_CONFIG.cloudflare.accountId) {
         const imgPrompt = `High quality educational illustration about ${topic.en}, modern flat design, vibrant colors, no text`;
         imageUrl = await generateImageCloudflare(imgPrompt);
       }
@@ -427,7 +527,7 @@ async function generateContent(options = {}) {
       errors.push(`img-cloudflare: ${e.message}`);
     }
 
-    if (!imageUrl || imageUrl.startsWith('data:')) {
+    if (!imageUrl || imageUrl.startsWith("data:")) {
       // Use Unsplash for a real URL (FB needs a real URL for photos)
       try {
         imageUrl = await getUnsplashImage(topic);
@@ -452,7 +552,12 @@ async function generateContent(options = {}) {
  * Return available topics list
  */
 function getTopics() {
-  return TOPIC_LIBRARY.map(t => ({ tag: t.tag, th: t.th, en: t.en, emoji: t.emoji }));
+  return TOPIC_LIBRARY.map((t) => ({
+    tag: t.tag,
+    th: t.th,
+    en: t.en,
+    emoji: t.emoji,
+  }));
 }
 
 /**
@@ -462,4 +567,10 @@ function getFormats() {
   return POST_FORMATS;
 }
 
-module.exports = { generateContent, getTopics, getFormats, TOPIC_LIBRARY, POST_FORMATS };
+module.exports = {
+  generateContent,
+  getTopics,
+  getFormats,
+  TOPIC_LIBRARY,
+  POST_FORMATS,
+};
