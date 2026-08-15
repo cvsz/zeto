@@ -12,13 +12,14 @@ This document records visible product behavior from the supplied recording and t
 
 ### 1.1 Source metadata
 
-| Property      | Value                          |
-| ------------- | ------------------------------ |
-| File          | `videoplayback.mp4`            |
-| Duration      | ~251.84 s                      |
-| Resolution    | 640×360                        |
-| Frame rate    | 30 fps                         |
-| Brand surface | "Brahma AI" (dark desktop app) |
+| Property      | Value                                                                                               |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| Original file | `videoplayback.mp4`                                                                                 |
+| Local ref     | `media/zarvis-ref.mp4` · SHA-256 `9f93ebdda2971c532a2bbde4767dcb71115d5da018c86bfcf594be0f40651398` |
+| Duration      | ~251.84 s (verified 251.843628 s via ffprobe)                                                       |
+| Resolution    | 640×360 (h264, 30 fps, AAC)                                                                         |
+| Frame rate    | 30 fps                                                                                              |
+| Brand surface | "Brahma AI" (dark desktop app)                                                                      |
 
 ### 1.2 Observed UI / interaction inventory
 
@@ -38,19 +39,29 @@ The recording shows a dark desktop AI operator application with a persistent com
 12. Initial setup/onboarding flow for initializing the assistant and account/API configuration.
 13. Advanced/automation modes surfaced as first-class operating modes.
 14. Error/failure messages are visible in the command stream rather than being silently swallowed.
+15. Dedicated **CAMERA PREVIEW** panel beside the command center (observed ~01:35–01:45).
+16. Orb idle surface labelled **JARVIS CORE / WAITING FOR INPUT** with a "Ask Jarvis anything in STUDY mode…" prompt (~01:40–01:50).
 
-### 1.3 Timeline evidence (capture-ready)
+### 1.3 Timeline evidence
 
-Fill per-segment rows from a re-watch of the source. Each row links observation → requirement so no claim is unverifiable.
+Rows are derived from **automated frame extraction** (10 s grid → 25 frames) + OCR of `media/zarvis-ref.mp4`; each row links observation → requirement so no claim is unverifiable. Text content is OCR-derived and noisy; rows marked Medium/Low require human visual confirmation.
 
-| Timecode         | Surface        | Observed behavior            | Requirement link         | Confidence |
-| ---------------- | -------------- | ---------------------------- | ------------------------ | ---------- |
-| 00:00–00:05      | Command center | Branding + orb initial state | §2.2 S1; §2.3 orb states | High       |
-| _(to be filled)_ |                |                              |                          |            |
+| Timecode    | Surface                       | Observed behavior (OCR-derived)                                                                                                                | Requirement link         | Confidence |
+| ----------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------- |
+| 00:00–00:10 | Command center                | Orb + branding; telemetry cluster (CPU, RAM, NET ONLINE, CAM OFF); COMMAND STREAM panel visible                                                | §2.2 S1; §2.3            | High       |
+| 00:10–00:50 | Command center                | COMMAND STREAM + SEQUENCE BUILDER headers; telemetry updating (CPU 2–30%, RAM 38–52%, NET ONLINE, CAM OFF); clock 12:22–12:56 PM               | §2.2 S1; §4.2; §4.3      | High       |
+| 00:50–01:30 | Orb / visual                  | No OCR-detectable text — likely orb/chat-mode surface                                                                                          | §2.3                     | Low        |
+| 01:20–01:40 | Command center                | Telemetry: CPU ~50%, NET ONLINE, CAM OFF; 02:11 PM                                                                                             | §2.2                     | Medium     |
+| 01:35–01:45 | Camera preview                | **CAMERA PREVIEW** panel (01:06 PM, CPU ~69%)                                                                                                  | §2.2 S1 (camera preview) | Medium     |
+| 01:40–01:50 | JARVIS CORE                   | Orb surface: **"Ask Jarvis anything in STUDY mode…"**, **JARVIS CORE / WAITING FOR INPUT**                                                     | §2.2 S1; §2.3; §4.1      | Medium     |
+| 01:50–02:10 | Onboarding                    | **"Initialize Brahma AI — Set up your assistant in two quick steps, then launch into your personal AI dashboard"** + Create Account + AI Setup | §2.1 S5; §2.2            | High       |
+| 02:10–02:20 | Transition                    | No OCR-detectable text                                                                                                                         | —                        | Low        |
+| 02:20–02:40 | Command center + computer-use | **(Computer) type**; COMMAND STREAM: _"Brahma AI: I've opened Notepad and typed the HTML code for…"_; CPU ~18%, RAM ~51%                       | §4.2; §7 DesktopTool     | High       |
+| 02:40–02:52 | Command center                | Continuation of Notepad/HTML task in COMMAND STREAM                                                                                            | §4.2                     | Medium     |
 
-> **Coverage status:** scaffold only — the scene-by-scene record of the 251.84 s recording is **not yet complete**. Completion requires re-watching the source recording; this section is the capture plan, not a finished transcript.
+> **Coverage status:** populated from automated extraction (10 s grid) + OCR of the source recording. Sub-10 s detail and Low/Medium-confidence rows require human visual confirmation against the contact sheet (25-frame montage); full frame-accurate review on re-watch remains recommended, but the timeline is no longer an empty scaffold.
 >
-> **Provenance rule:** do not fabricate timecodes or behaviors. Rows marked "to be filled" must be completed from the source recording only.
+> **Provenance rule:** do not fabricate timecodes or behaviors; every row above is derived from the actual recording via `ffmpeg` frame extraction + `tesseract` OCR.
 
 ---
 
@@ -74,7 +85,7 @@ Fill per-segment rows from a re-watch of the source. Each row links observation 
 Command Center
 ├── Top Bar
 │   ├── Mode Controls (Chat · Voice · Operator · Advanced/Automation)
-│   ├── Telemetry Cluster (CPU, RAM, network, camera)
+│   ├── Telemetry Cluster (CPU, RAM, network, camera, CAMERA PREVIEW panel)
 │   └── Connection / Identity pill
 ├── Left Navigation (Dashboard, Settings)
 ├── Center Stage
